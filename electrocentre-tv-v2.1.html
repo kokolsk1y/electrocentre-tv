@@ -374,8 +374,6 @@ html, body {
 </head>
 <body>
 <div id="wrap">
-<div class="fl" id="fl"></div>
-
 <!-- ══ HEADER ══ -->
 <header class="hdr">
   <div class="logo">
@@ -578,19 +576,13 @@ function resetItems(slideEl){
 }
 
 function goTo(idx){
-  const fl = document.getElementById('fl');
-  fl.classList.add('on');
-  setTimeout(()=>{
-    resetItems(slides[cur]);
-    slides[cur].classList.remove('on');
-    cur = ((idx % slides.length) + slides.length) % slides.length;
-    slides[cur].classList.add('on');
-    updateDots(cur);
-    fl.classList.remove('on');
-    const s = slides[cur];
-    setTimeout(()=>animateItems(s), 50);
-    startProg();
-  }, 120);
+  resetItems(slides[cur]);
+  slides[cur].classList.remove('on');
+  cur = ((idx % slides.length) + slides.length) % slides.length;
+  slides[cur].classList.add('on');
+  updateDots(cur);
+  setTimeout(()=>animateItems(slides[cur]), 50);
+  startProg();
 }
 
 function startProg(){
