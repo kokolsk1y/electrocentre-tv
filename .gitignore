@@ -1,0 +1,11 @@
+# Large binaries
+tz_images/*.exe
+tz_images/*.msi
+tz_images/*.zip
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
