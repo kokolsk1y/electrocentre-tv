@@ -1,0 +1,70 @@
+{
+  "name": "📺 TV — DEMO (скрапинг)",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tv-demo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "tv-demo-electrocentre"
+    },
+    {
+      "id": "n2",
+      "name": "Загрузка канала",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://t.me/s/electrocentre39",
+        "options": {}
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Парсинг постов",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const html = $input.first().json.data;\nconst PROXY = 'https://kokolsk1y.app.n8n.cloud/webhook/tv-video?url=';\n\nfunction proxyUrl(url) {\n  if (!url) return '';\n  return PROXY + encodeURIComponent(url);\n}\n\nconst msgPattern = /data-post=\"electrocentre39\\/(\\d+)\"/g;\nconst msgIds = [];\nlet match;\nwhile ((match = msgPattern.exec(html)) !== null) {\n  msgIds.push(match[1]);\n}\n\nconst allPosts = [];\n\nfor (const msgId of msgIds) {\n  const startIdx = html.indexOf(`data-post=\"electrocentre39/${msgId}\"`);\n  if (startIdx === -1) continue;\n  const chunk = html.substring(startIdx, startIdx + 8000);\n\n  const textMatch = chunk.match(/class=\"tgme_widget_message_text[^\"]*\"[^>]*>([\\s\\S]*?)<\\/div>/);\n  let text = '';\n  if (textMatch) {\n    let raw = textMatch[1];\n    raw = raw.replace(/<br\\s*\\/?>/gi, '\\n');\n    raw = raw.replace(/<[^>]+>/g, '');\n    raw = raw.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,\"'\").replace(/&quot;/g,'\"');\n    text = raw.trim();\n  }\n\n  const dateMatch = chunk.match(/datetime=\"([^\"]+)\"/);\n  const date = dateMatch ? dateMatch[1] : '';\n\n  const photoMatch = chunk.match(/tgme_widget_message_photo_wrap[^>]*style=\"[^\"]*background-image:url\\('([^']+)'\\)/);\n  const hasPhoto = !!photoMatch;\n  const photoUrl = photoMatch ? photoMatch[1] : '';\n\n  const hasVideo = chunk.includes('tgme_widget_message_video') || chunk.includes('<video');\n  const videoMatch = chunk.match(/<video[^>]*\\bsrc=['\"]([^'\"]+)['\"]/i)\n                  || chunk.match(/<video[^>]*\\bdata-src=['\"]([^'\"]+)['\"]/i);\n  const videoUrl = videoMatch ? videoMatch[1] : '';\n  const videoThumbMatch = chunk.match(/tgme_widget_message_video_thumb[^>]*style=\"[^\"]*background-image:url\\('([^']+)'\\)/);\n  const videoThumb = videoThumbMatch ? videoThumbMatch[1] : '';\n\n  allPosts.push({ id: msgId, text, date, hasPhoto, photoUrl, hasVideo, videoUrl, videoThumb });\n}\n\nconst photoPosts = allPosts.filter(p => p.hasPhoto).slice(-2).reverse();\nconst videoPosts = allPosts.filter(p => p.hasVideo).slice(-1);\n\nconst result = {\n  posts: [\n    ...photoPosts.slice(0,1).map(p => ({ type: 'photo', text: p.text, date: p.date, img: proxyUrl(p.photoUrl) })),\n    ...photoPosts.slice(1,2).map(p => ({ type: 'photo', text: p.text, date: p.date, img: proxyUrl(p.photoUrl) })),\n    ...videoPosts.map(p => ({ type: 'video', text: p.text, date: p.date, videoUrl: p.videoUrl ? proxyUrl(p.videoUrl) : '', videoThumb: proxyUrl(p.videoThumb) }))\n  ],\n  updatedAt: new Date().toISOString()\n};\n\nreturn [{ json: result }];\n"
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Ответ",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [860, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($input.first().json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Загрузка канала", "type": "main", "index": 0 }]] },
+    "Загрузка канала": { "main": [[{ "node": "Парсинг постов", "type": "main", "index": 0 }]] },
+    "Парсинг постов": { "main": [[{ "node": "Ответ", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

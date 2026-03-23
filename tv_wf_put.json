@@ -1,0 +1,115 @@
+{
+  "name": "📺 TV — Посты для телевизора",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tv-posts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "tv-posts-electrocentre"
+    },
+    {
+      "id": "n2",
+      "name": "Получение обновлений",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.telegram.org/bot8732835567:AAH6ZqWNPM57nuSY6SybjtlVjJk_vxBcOjk/getUpdates?limit=100",
+        "options": {}
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Парсинг постов",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const TOKEN = '8732835567:AAH6ZqWNPM57nuSY6SybjtlVjJk_vxBcOjk';\nconst BASE = `https://api.telegram.org/bot${TOKEN}`;\nconst PROXY = 'https://kokolsk1y.app.n8n.cloud/webhook/tv-video?url=';\n\nfunction proxyUrl(url) {\n  return url ? PROXY + encodeURIComponent(url) : '';\n}\n\nasync function tgGet(url) {\n  return await this.helpers.request({ method: 'GET', url, json: true });\n}\n\n// Кэш постов между запросами\nconst cache = $getWorkflowStaticData('global');\nif (!cache.photos) cache.photos = [];\nif (!cache.video) cache.video = null;\n\nconst updates = $input.first().json.result || [];\n\n// Берём только channel_post, сортируем по message_id (старые → новые)\nconst channelPosts = updates\n  .filter(u => u.channel_post)\n  .map(u => u.channel_post)\n  .sort((a, b) => a.message_id - b.message_id);\n\nconst groupMap = {};\nfor (const msg of channelPosts) {\n  if (msg.photo) {\n    const largest = msg.photo[msg.photo.length - 1];\n    const fileJson = await this.helpers.request({ method: 'GET', url: `${BASE}/getFile?file_id=${largest.file_id}`, json: true });\n    const imgUrl = fileJson.ok\n      ? `https://api.telegram.org/file/bot${TOKEN}/${fileJson.result.file_path}`\n      : '';\n    const gid = msg.media_group_id || ('single_' + msg.message_id);\n    if (!groupMap[gid]) {\n      groupMap[gid] = { type: 'photo', text: '', date: new Date(msg.date * 1000).toISOString(), imgs: [], msg_id: msg.message_id };\n    }\n    groupMap[gid].imgs.push(proxyUrl(imgUrl));\n    if (msg.caption) groupMap[gid].text = msg.caption;\n  }\n\n  if (msg.video) {\n    // getFile работает только до 20MB — для больших файлов пропускаем\n    let videoUrl = '';\n    const MAX_SIZE = 20 * 1024 * 1024;\n    if (!msg.video.file_size || msg.video.file_size <= MAX_SIZE) {\n      try {\n        const videoJson = await this.helpers.request({ method: 'GET', url: `${BASE}/getFile?file_id=${msg.video.file_id}`, json: true });\n        if (videoJson.ok) videoUrl = `https://api.telegram.org/file/bot${TOKEN}/${videoJson.result.file_path}`;\n      } catch(e) { /* файл слишком большой */ }\n    }\n\n    let thumbUrl = '';\n    const thumb = msg.video.thumbnail || msg.video.thumb;\n    if (thumb) {\n      try {\n        const thumbJson = await this.helpers.request({ method: 'GET', url: `${BASE}/getFile?file_id=${thumb.file_id}`, json: true });\n        if (thumbJson.ok) thumbUrl = `https://api.telegram.org/file/bot${TOKEN}/${thumbJson.result.file_path}`;\n      } catch(e) {}\n    }\n\n    cache.video = {\n      type: 'video',\n      text: msg.caption || '',\n      date: new Date(msg.date * 1000).toISOString(),\n      videoUrl: proxyUrl(videoUrl),\n      videoThumb: proxyUrl(thumbUrl),\n      msg_id: msg.message_id\n    };\n  }\n}\n\n// Добавляем сгруппированные фото в кэш\nconst newGroups = Object.values(groupMap).sort((a, b) => a.msg_id - b.msg_id);\nfor (const group of newGroups) {\n  cache.photos.unshift(group);\n}\ncache.photos = cache.photos.slice(0, 2);\n\n// Подтверждаем обновления\nif (updates.length > 0) {\n  const lastId = Math.max(...updates.map(u => u.update_id));\n  await this.helpers.request({ method: 'GET', url: `${BASE}/getUpdates?offset=${lastId + 1}&limit=1`, json: true });\n}\n\n// YouTube RSS — последний Shorts\nif (!cache.youtube) cache.youtube = null;\ntry {\n  const xmlText = await this.helpers.request({ method: 'GET', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCza1f89Llt4sTN0QoFfeUxA', json: false });\n  const idMatch = xmlText.match(/<yt:videoId>([^<]+)<\\/yt:videoId>/);\n  const titleMatches = [...xmlText.matchAll(/<title>([^<]+)<\\/title>/g)];\n  const pubMatch = xmlText.match(/<published>([^<]+)<\\/published>/);\n  const descMatch = xmlText.match(/<media:description>([\\s\\S]*?)<\\/media:description>/);\n  if (idMatch) {\n    const embedId = idMatch[1];\n    const title = titleMatches[1] ? titleMatches[1][1] : '';\n    const desc = descMatch ? descMatch[1].trim() : '';\n    const date = pubMatch ? pubMatch[1] : new Date().toISOString();\n    cache.youtube = { type: 'youtube', embedId, title, text: title + (desc ? '\\n\\n' + desc : ''), date };\n  }\n} catch(e) { /* YouTube RSS недоступен */ }\n\nconst posts = [\n  ...cache.photos,\n  ...(cache.video ? [cache.video] : []),\n  ...(cache.youtube ? [cache.youtube] : [])\n];\n\nreturn [{ json: { posts, updatedAt: new Date().toISOString() } }];\n"
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Ответ",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        860,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($input.first().json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Получение обновлений",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Получение обновлений": {
+      "main": [
+        [
+          {
+            "node": "Парсинг постов",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Парсинг постов": {
+      "main": [
+        [
+          {
+            "node": "Ответ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "project": "electrocentre-smart-tv",
+  "mode": "interactive",
+  "granularity": "broad",
+  "parallelization": true,
+  "git_tracking": "phase-end",
+  "research_agents": true,
+  "plan_checker": true,
+  "verifier": true,
+  "model_profile": "balanced"
+}

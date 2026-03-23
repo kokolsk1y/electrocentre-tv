@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ЭлектроЦентр — Smart TV</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:  #1B3073;
+  --blue2: #2548AE;
+  --blue3: #3A63CC;
+  --or:    #E8420A;
+  --or2:   #FF6B2B;
+  --wh:    #FFFFFF;
+  --lt:    #F3F6FF;
+  --lt2:   #E8EDF8;
+  --txt:   #1B2240;
+  --txt2:  rgba(27,34,64,0.5);
+}
+html, body {
+  width:100vw; height:100vh;
+  overflow:hidden;
+  background: var(--wh);
+  color: var(--txt);
+  font-family: 'Montserrat', sans-serif;
+  cursor: none;
+  user-select: none;
+}
+
+/* ══ FLASH ══ */
+.fl { position:fixed; top:74px; bottom:68px; left:0; right:0; background:#fff; opacity:0; pointer-events:none; z-index:100; transition:opacity 0.2s; }
+.fl.on { opacity:1; }
+
+/* ══ HEADER ══ */
+.hdr {
+  position:fixed; top:0; left:0; right:0; height:70px;
+  background: var(--wh);
+  border-bottom: 4px solid var(--blue);
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 36px; z-index:200;
+  box-shadow: 0 2px 16px rgba(27,48,115,0.1);
+}
+.logo { display:flex; align-items:center; flex-shrink:0; }
+.logo img { height:42px; width:auto; }
+/* SVG fallback logo */
+.logo-svg { height:42px; width:auto; }
+
+.hdr-mid { display:flex; gap:28px; align-items:center; }
+.hpill { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--txt); }
+.hpill .ico { font-size:17px; }
+.hpill b { color:var(--blue); font-size:18px; font-weight:800; }
+.hpill .site { color:var(--or); font-size:20px; font-weight:800; letter-spacing:0.5px; }
+.hpill .hours { font-size:12px; color:var(--txt2); font-weight:500; }
+
+.hdr-r { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+.live { display:flex; align-items:center; gap:7px; font-size:10px; font-weight:700; letter-spacing:2px; color:var(--or); text-transform:uppercase; }
+.live-dot { width:9px; height:9px; border-radius:50%; background:var(--or); animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.1} }
+.clk { font-size:21px; font-weight:800; color:var(--blue); letter-spacing:2px; font-variant-numeric:tabular-nums; }
+
+/* ══ STAGE ══ */
+.stage { position:fixed; top:70px; bottom:68px; left:0; right:0; }
+
+/* ══ SLIDE BASE ══ */
+.slide {
+  position:absolute; inset:0;
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:40px 80px;
+  pointer-events:none; overflow:hidden;
+}
+.slide.on { display:flex; pointer-events:auto; }
+
+/* ══ APPEAR ITEMS ══ */
+.ap {
+  transform:translateY(18px);
+  transition:transform 0.6s ease;
+}
+.ap.show { transform:translateY(0); }
+
+/* ══ SHARED ELEMENTS ══ */
+.eyebrow {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 18px;
+  background:rgba(27,48,115,0.07); border:1px solid rgba(27,48,115,0.15);
+  font-size:11px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--blue); font-weight:700; margin-bottom:18px; border-radius:2px;
+}
+.eyebrow.or { background:rgba(232,66,10,0.08); border-color:rgba(232,66,10,0.2); color:var(--or); }
+.eyebrow.wh { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:rgba(255,255,255,0.7); }
+
+/* ══ SLIDE 1: HERO ══ */
+.s1 { background:var(--wh); }
+.s1-bg {
+  position:absolute; font-size:340px; font-weight:900; color:transparent;
+  -webkit-text-stroke:1px rgba(27,48,115,0.04);
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  white-space:nowrap; pointer-events:none; letter-spacing:-10px; line-height:1;
+}
+.hero-title {
+  font-size:82px; font-weight:900; line-height:1.05; letter-spacing:-1px;
+  color:var(--txt); margin-bottom:8px; position:relative; z-index:1;
+}
+.hero-title .or { color:var(--or); }
+.hero-title .bl { color:var(--blue); }
+.depts {
+  display:flex; flex-direction:column; align-items:center;
+  gap:16px; position:relative; z-index:1; margin-top:28px;
+}
+.depts-row { display:flex; gap:16px; justify-content:center; }
+.dept-card {
+  display:flex; align-items:center; gap:18px;
+  padding:22px 32px;
+  background:var(--lt); border:1.5px solid rgba(27,48,115,0.1);
+  border-left:5px solid var(--blue); border-radius:3px; width:300px;
+}
+.dept-ic { width:46px; height:46px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.dept-ic img { width:46px; height:46px; object-fit:contain; }
+.dept-nm { font-size:21px; font-weight:700; color:var(--txt); text-align:left; line-height:1.2; }
+
+/* ══ SLIDE 2: ЦИФРЫ ══ */
+.s2 { background:var(--blue); }
+.s2-bg {
+  position:absolute; font-size:400px; font-weight:900; color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,0.04);
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  pointer-events:none; white-space:nowrap;
+}
+.s2-title { font-size:52px; font-weight:900; color:var(--wh); letter-spacing:-0.5px; margin-bottom:40px; position:relative; z-index:1; }
+.nums-row {
+  display:flex; gap:0;
+  border:1px solid rgba(255,255,255,0.12); position:relative; z-index:1;
+}
+.num-item {
+  padding:36px 56px; border-right:1px solid rgba(255,255,255,0.1);
+  display:flex; flex-direction:column; align-items:center; gap:8px; flex:1;
+}
+.num-item:last-child { border-right:none; }
+.num-n { font-size:120px; font-weight:900; color:var(--or); line-height:1; letter-spacing:-2px; }
+.num-l { font-size:18px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.5); font-weight:600; margin-top:10px; }
+
+/* ══ SLIDE 3: ЮР. ЛИЦА ══ */
+.s3 { background:var(--wh); }
+.sec-title { font-size:64px; font-weight:900; color:var(--blue); letter-spacing:-1px; line-height:1.05; margin-bottom:28px; position:relative; z-index:1; }
+.sec-title .or { color:var(--or); }
+.b2b-list { display:flex; flex-direction:column; gap:13px; width:100%; max-width:760px; position:relative; z-index:1; }
+.b2b-item {
+  display:flex; align-items:center; gap:20px;
+  padding:20px 30px;
+  background:var(--lt); border:1.5px solid rgba(27,48,115,0.08);
+  border-left:5px solid var(--blue); border-radius:3px; text-align:left;
+}
+.b2b-ic { width:40px; height:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.b2b-ic svg { width:40px; height:40px; }
+.b2b-txt { font-size:26px; font-weight:700; color:var(--txt); }
+
+/* ══ SLIDE 4: ОНЛАЙН ══ */
+.s4 { background:var(--blue); padding:40px 60px !important; }
+.s4-inner { display:flex; gap:56px; align-items:center; width:100%; max-width:1100px; position:relative; z-index:1; }
+.s4-left { flex:1; text-align:left; }
+.s4-title { font-size:68px; font-weight:900; color:var(--wh); line-height:1.05; margin-bottom:24px; letter-spacing:-1px; }
+.s4-title .or { color:var(--or); }
+.s4-list { display:flex; flex-direction:column; gap:12px; }
+.s4-item {
+  display:flex; align-items:center; gap:18px;
+  padding:16px 22px;
+  background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1);
+  border-left:4px solid var(--or); border-radius:2px;
+}
+.s4-ic { width:40px; height:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.s4-ic svg { width:40px; height:40px; }
+.s4-txt { font-size:24px; font-weight:600; color:rgba(255,255,255,0.9); }
+.s4-right { display:flex; flex-direction:column; align-items:center; gap:14px; flex-shrink:0; }
+.qr-box { background:#fff; padding:12px; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+.qr-label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.45); }
+
+/* ══ SLIDE 5: СКИДКИ ОНЛАЙН ══ */
+.s5 { background:var(--wh); }
+.s5-title { font-size:52px; font-weight:900; color:var(--blue); margin-bottom:6px; letter-spacing:-0.5px; }
+.s5-sub { font-size:28px; color:var(--or); font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:32px; }
+.disc-list { display:flex; flex-direction:column; gap:10px; width:100%; max-width:760px; }
+.disc-row {
+  display:flex; align-items:center;
+  padding:18px 32px;
+  background:var(--lt); border:1.5px solid rgba(27,48,115,0.08); border-radius:3px;
+}
+.disc-from { flex:1; font-size:26px; font-weight:500; color:var(--txt); text-align:left; }
+.disc-from b { font-weight:800; }
+.disc-pct { font-size:46px; font-weight:900; color:var(--or); letter-spacing:-0.5px; min-width:90px; text-align:right; }
+
+/* ══ SLIDE 6: КАРТА КЛИЕНТА ══ */
+.s6 { background:var(--blue); }
+.s6-title { font-size:58px; font-weight:900; color:var(--wh); margin-bottom:32px; letter-spacing:-0.5px; position:relative; z-index:1; }
+.s6-title .or { color:var(--or); }
+.card-list { display:flex; flex-direction:column; gap:16px; width:100%; max-width:900px; position:relative; z-index:1; }
+.loy-card {
+  display:grid; grid-template-columns:130px 1fr; align-items:stretch;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;
+}
+.loy-pct {
+  display:flex; align-items:center; justify-content:center;
+  background:var(--or); font-size:48px; font-weight:900; color:#fff;
+}
+.loy-info { padding:18px 28px; text-align:left; }
+.loy-cond { font-size:22px; color:rgba(255,255,255,0.80); font-weight:400; line-height:1.6; }
+.loy-cond b { color:#fff; font-weight:800; }
+
+/* ══ SLIDE 7: ДОСТАВКА ══ */
+.s7 { background:var(--blue); }
+.s7-bg {
+  position:absolute; font-size:380px; font-weight:900; color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,0.04);
+  bottom:-80px; right:-40px; pointer-events:none; white-space:nowrap;
+}
+.s7-title { font-size:110px; font-weight:900; color:var(--wh); line-height:1.0; letter-spacing:-2px; position:relative; z-index:1; }
+.s7-sub { font-size:36px; font-weight:400; color:rgba(255,255,255,0.88); line-height:1.45; position:relative; z-index:1; }
+.s7-sub b { font-weight:900; color:var(--or); }
+.s7-note { font-size:18px; font-weight:500; color:rgba(255,255,255,0.45); margin-top:22px; position:relative; z-index:1; }
+
+/* ══ SLIDE 8: TG СКИДКА ══ */
+.s8 { background:var(--blue); padding:40px 60px !important; }
+.s8-inner { display:flex; gap:56px; align-items:center; width:100%; max-width:1000px; position:relative; z-index:1; }
+.s8-left { flex:1; text-align:left; }
+.s8-badge {
+  display:inline-flex; align-items:center; gap:8px; padding:6px 18px;
+  background:rgba(41,182,246,0.15); border:1px solid rgba(41,182,246,0.3);
+  font-size:10px; letter-spacing:3px; text-transform:uppercase; color:#29B6F6; font-weight:700; margin-bottom:16px;
+}
+.s8-big { font-size:100px; font-weight:900; line-height:1; letter-spacing:-2px; margin-bottom:4px; }
+.s8-big .wh { color:var(--wh); }
+.s8-big .or2 { color:var(--or); }
+.s8-subt { font-size:26px; font-weight:800; color:var(--wh); margin-bottom:6px; }
+.s8-desc { font-size:16px; color:rgba(255,255,255,0.55); font-weight:400; margin-bottom:26px; }
+.s8-steps { display:flex; flex-direction:column; gap:10px; }
+.s8-step {
+  display:flex; align-items:center; gap:16px;
+  padding:15px 20px;
+  background:rgba(255,255,255,0.06); border-left:3px solid #29B6F6;
+}
+.s8-n { width:34px; height:34px; border-radius:50%; background:#29B6F6; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#fff; flex-shrink:0; }
+.s8-t { font-size:22px; font-weight:500; color:rgba(255,255,255,0.88); }
+.s8-t b { color:#fff; }
+.s8-right { display:flex; flex-direction:column; align-items:center; gap:12px; flex-shrink:0; }
+.s8-qr-wrap { background:#fff; padding:12px; border-radius:6px; }
+.s8-ql { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.4); text-align:center; }
+.s8-qlink { font-size:14px; font-weight:800; color:#29B6F6; text-align:center; letter-spacing:0.5px; }
+
+/* ══ TG POST SLIDES — cinematic fullscreen ══ */
+.tg-slide { padding:0 !important; background:#000; }
+
+/* Медиа — на весь слайд */
+.tg-media { position:absolute; inset:0; z-index:0; overflow:hidden; }
+/* Блюр-фон — копия фото, размытая + затемнённая */
+.tg-photo-bg {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:cover; display:none; z-index:1;
+  filter:blur(28px) brightness(0.35) saturate(1.4);
+  transform:scale(1.08);
+}
+/* Основное фото — во весь слайд, сохраняет пропорции */
+.tg-photo {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:contain; display:none; z-index:2;
+}
+.tg-media video {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:contain; display:none; z-index:2;
+}
+/* Заглушка без фото — позади img */
+.tg-no-media {
+  position:absolute; inset:0; z-index:0;
+  background:linear-gradient(135deg,#0d1a3e 0%,#1b3073 100%);
+  display:flex; align-items:center; justify-content:center;
+  font-size:80px; opacity:0.12;
+}
+
+/* Градиент снизу */
+.tg-grad {
+  position:absolute; inset:0; z-index:1;
+  background:linear-gradient(to top,
+    rgba(0,0,0,0.95) 0%,
+    rgba(0,0,0,0.80) 20%,
+    rgba(0,0,0,0.45) 45%,
+    rgba(0,0,0,0.1)  65%,
+    transparent      100%
+  );
+}
+/* Затемнение верха для шапки */
+.tg-grad-top {
+  position:absolute; top:0; left:0; right:0; height:110px; z-index:1;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+}
+
+/* Шапка канала — сверху */
+.tg-top {
+  position:absolute; top:0; left:0; right:0; z-index:2;
+  padding:20px 52px; display:flex; align-items:center; gap:14px;
+}
+.tg-ava {
+  width:44px; height:44px; border-radius:50%;
+  background:linear-gradient(135deg,var(--blue2),var(--blue3));
+  border:2px solid rgba(255,255,255,0.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}
+.tg-chname { font-size:15px; font-weight:800; color:#fff; }
+.tg-subname { font-size:11px; color:rgba(255,255,255,0.5); margin-top:2px; }
+.tg-dt { font-size:12px; color:rgba(255,255,255,0.45); margin-left:auto; white-space:nowrap; }
+.tg-type-badge {
+  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:rgba(255,255,255,0.5); padding:5px 14px;
+  border:1px solid rgba(255,255,255,0.2); border-radius:20px; margin-left:8px;
+}
+
+/* Контент снизу */
+.tg-bottom {
+  position:absolute; bottom:0; left:0; right:0; z-index:2;
+  padding:0 56px 50px;
+  display:flex; flex-direction:row; align-items:flex-end; gap:36px;
+}
+.tg-text-col { flex:1; min-width:0; }
+.tg-headline {
+  font-size:40px; font-weight:900; color:#fff;
+  line-height:1.15; letter-spacing:-0.5px; margin-bottom:12px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  text-shadow:0 2px 16px rgba(0,0,0,0.6);
+}
+.tg-desc {
+  font-size:19px; font-weight:400; color:rgba(255,255,255,0.80);
+  line-height:1.55;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  text-shadow:0 1px 8px rgba(0,0,0,0.5);
+}
+/* QR блок справа */
+.tg-qr-col {
+  flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:10px;
+}
+.tg-qr-label {
+  font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:rgba(255,255,255,0.55); text-align:center; line-height:1.4;
+  text-shadow:0 1px 6px rgba(0,0,0,0.6);
+}
+.tg-qr-wrap {
+  background:#fff; padding:10px; border-radius:8px;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  width:140px; height:140px;
+  display:flex; align-items:center; justify-content:center;
+}
+.tg-qr-wrap canvas, .tg-qr-wrap img { width:120px !important; height:120px !important; display:block; }
+.tg-qr-link {
+  font-size:12px; font-weight:800; color:#29B6F6;
+  text-shadow:0 1px 6px rgba(0,0,0,0.6); letter-spacing:0.3px;
+}
+
+/* Кнопка play */
+.tg-play-btn {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:3; width:88px; height:88px; border-radius:50%;
+  background:rgba(0,0,0,0.55); border:3px solid rgba(255,255,255,0.9);
+  display:none; align-items:center; justify-content:center;
+  font-size:32px; color:#fff; padding-left:6px;
+  backdrop-filter:blur(6px);
+}
+
+/* ══ TICKER ══ */
+.ticker-wrap {
+  position:fixed; bottom:40px; left:0; right:0; height:28px;
+  background:var(--blue); overflow:hidden; z-index:190;
+}
+.ticker-inner {
+  display:inline-flex; align-items:center;
+  animation:ticker 42s linear infinite; white-space:nowrap; height:100%;
+}
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ticker-inner span { font-size:12px; font-weight:600; color:rgba(255,255,255,0.85); padding:0 18px; height:100%; display:flex; align-items:center; }
+.ticker-inner .ts { color:var(--or); padding:0 4px; font-weight:900; font-size:15px; }
+
+/* ══ BOTTOM BAR ══ */
+.bot {
+  position:fixed; bottom:0; left:0; right:0; height:40px;
+  background:var(--wh); border-top:2px solid rgba(27,48,115,0.1);
+  display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200;
+}
+.prog-wrap { width:150px; flex-shrink:0; }
+.prog-bar { height:3px; background:rgba(27,48,115,0.1); border-radius:3px; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--blue),var(--blue3)); border-radius:3px; width:0%; }
+.dots-wrap { display:flex; gap:6px; align-items:center; flex:1; justify-content:center; }
+.sdot { height:3px; border-radius:2px; background:rgba(27,48,115,0.15); transition:all .4s; width:18px; cursor:pointer; }
+.sdot.on { background:var(--blue); width:28px; }
+.bot-info { font-size:12px; font-weight:600; color:rgba(27,48,115,0.35); letter-spacing:0.5px; flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="fl" id="fl"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="hdr">
+  <div class="logo">
+    <!--
+      ЛОГОТИП: замените src на путь к файлу когда он будет готов.
+      Пример: <img src="logo.png" class="logo-img">
+      Пока используется SVG-заглушка.
+    -->
+    <img src="data:image/png;base64,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" class="logo-svg" alt="ЭлектроЦентр">
+  </div>
+
+  <div class="hdr-mid">
+    <div class="hpill"><span class="ico">📞</span><b>+7 (4012) 55-55-14</b></div>
+    <div class="hpill"><span class="ico">🌐</span><span class="site">stv39.ru</span></div>
+    <div class="hpill"><span class="hours">Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span></div>
+  </div>
+
+  <div class="hdr-r">
+    <div class="live"><div class="live-dot"></div>В ЭФИРЕ</div>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</header>
+
+<!-- ══ STAGE ══ -->
+<div class="stage">
+
+  <!-- SLIDE 1: HERO -->
+  <div class="slide s1 on" id="s0" data-duration="15000">
+    <div class="s1-bg">ЭЦ</div>
+    <div class="eyebrow ap">⚡ Профессиональная электротехника · Калининград</div>
+    <div class="hero-title ap"><span class="bl">ВСЁ ДЛЯ</span> <span class="or">ЭЛЕКТРО</span><span class="bl">МОНТАЖА</span></div>
+    <div class="depts">
+      <div class="depts-row">
+        <div class="dept-card ap"><div class="dept-ic"><svg viewBox="0 0 46 46" fill="none"><path d="M23 4L7 10v12c0 10 16 18 16 18s16-8 16-18V10L23 4z" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5" stroke-linejoin="round"/><path d="M25 15h-7l-1 8h5l-1 8 8-10h-6l2-6z" fill="#E8420A"/></svg></div><div class="dept-nm">Автоматика и щиты</div></div>
+        <div class="dept-card ap"><div class="dept-ic"><svg viewBox="0 0 46 46" fill="none"><path d="M23 6C15.8 6 10 12 10 19c0 5 2.6 9.4 6.5 12V34h13v-3c3.9-2.6 6.5-7 6.5-12C36 12 30.2 6 23 6z" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5"/><line x1="17" y1="38" x2="29" y2="38" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><line x1="19" y1="41" x2="27" y2="41" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><circle cx="23" cy="19" r="5" fill="#E8420A"/></svg></div><div class="dept-nm">Освещение</div></div>
+        <div class="dept-card ap"><div class="dept-ic"><svg viewBox="0 0 46 46" fill="none"><rect x="7" y="19" width="20" height="9" rx="2.5" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5"/><rect x="27" y="17" width="12" height="13" rx="2.5" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5"/><rect x="23" y="21" width="4" height="5" fill="#1B3073"/><circle cx="12" cy="23.5" r="2.5" fill="#E8420A"/><circle cx="19" cy="23.5" r="2.5" fill="#E8420A"/></svg></div><div class="dept-nm">Инструмент</div></div>
+      </div>
+      <div class="depts-row">
+        <div class="dept-card ap"><div class="dept-ic"><svg viewBox="0 0 46 46" fill="none"><rect x="15" y="5" width="5" height="12" rx="2" fill="#1B3073"/><rect x="26" y="5" width="5" height="12" rx="2" fill="#1B3073"/><path d="M13 17h20v5a10 10 0 01-20 0v-5z" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5"/><line x1="23" y1="32" x2="23" y2="40" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><circle cx="23" cy="41" r="3" fill="#E8420A"/></svg></div><div class="dept-nm">Инсталляция</div></div>
+        <div class="dept-card ap"><div class="dept-ic"><svg viewBox="0 0 46 46" fill="none"><circle cx="23" cy="23" r="11" fill="#EEF2FF" stroke="#1B3073" stroke-width="2.5"/><circle cx="23" cy="23" r="5" fill="#1B3073"/><line x1="23" y1="7" x2="23" y2="12" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><line x1="39" y1="23" x2="34" y2="23" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><line x1="12" y1="34" x2="8" y2="38" stroke="#E8420A" stroke-width="3" stroke-linecap="round"/><line x1="34" y1="34" x2="38" y2="38" stroke="#E8420A" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="8" x2="12" y2="12" stroke="#E8420A" stroke-width="3" stroke-linecap="round"/></svg></div><div class="dept-nm">Кабель и метизы</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: ЦИФРЫ -->
+  <div class="slide s2" id="s1" data-duration="16000">
+    <div class="s2-bg">25+</div>
+    <div class="s2-title ap">МЫ В ЦИФРАХ</div>
+    <div class="nums-row">
+      <div class="num-item ap"><div class="num-n">20К+</div><div class="num-l">позиций в наличии</div></div>
+      <div class="num-item ap"><div class="num-n">25+</div><div class="num-l">лет на рынке</div></div>
+      <div class="num-item ap"><div class="num-n">100+</div><div class="num-l">мировых брендов</div></div>
+      <div class="num-item ap"><div class="num-n">24/7</div><div class="num-l">онлайн-заказы</div></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: ЮР. ЛИЦА -->
+  <div class="slide s3" id="s2" data-duration="18000">
+    <div class="sec-title ap">РАБОТА С<br><span class="or">ЮРИДИЧЕСКИМИ ЛИЦАМИ</span></div>
+    <div class="b2b-list">
+      <div class="b2b-item ap"><div class="b2b-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M10 22v-5C10 12 14.5 8 20 8s10 4 10 9v5" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><rect x="7" y="21" width="6" height="9" rx="3" fill="#1B3073"/><rect x="27" y="21" width="6" height="9" rx="3" fill="#1B3073"/><path d="M33 30v1.5A4.5 4.5 0 0128.5 36H23" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><circle cx="23" cy="36" r="2.5" fill="#E8420A"/></svg></div><div class="b2b-txt">Персональный менеджер</div></div>
+      <div class="b2b-item ap"><div class="b2b-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M20 5l3.8 8 8.8 1.2-6.4 6.2 1.6 8.8L20 25l-7.8 4.2 1.6-8.8-6.4-6.2 8.8-1.2L20 5z" fill="#E8420A" stroke="#1B3073" stroke-width="2" stroke-linejoin="round"/></svg></div><div class="b2b-txt">Бонусы и привилегии</div></div>
+      <div class="b2b-item ap"><div class="b2b-ic"><svg viewBox="0 0 40 40" fill="none"><rect x="6" y="9" width="28" height="18" rx="2" stroke="#1B3073" stroke-width="2.5"/><path d="M3 31h34" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><path d="M15 31l1.5-4h7L25 31" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="18" r="4" fill="#E8420A"/></svg></div><div class="b2b-txt">Личный кабинет на stv39.ru</div></div>
+      <div class="b2b-item ap"><div class="b2b-ic"><svg viewBox="0 0 40 40" fill="none"><rect x="5" y="9" width="24" height="22" rx="2" stroke="#1B3073" stroke-width="2.5"/><path d="M5 16h24M13 5v8M21 5v8" stroke="#1B3073" stroke-width="2.5" stroke-linecap="round"/><circle cx="31" cy="30" r="8" fill="white" stroke="#E8420A" stroke-width="2.5"/><path d="M31 26v4l3 3" stroke="#E8420A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="b2b-txt">Отсрочка платежа</div></div>
+      <div class="b2b-item ap"><div class="b2b-ic"><svg viewBox="0 0 40 40" fill="none"><circle cx="13" cy="13" r="6" stroke="#1B3073" stroke-width="2.5"/><circle cx="27" cy="27" r="6" stroke="#1B3073" stroke-width="2.5"/><path d="M9 31L31 9" stroke="#E8420A" stroke-width="2.8" stroke-linecap="round"/></svg></div><div class="b2b-txt">Система оптовых скидок</div></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: ОНЛАЙН -->
+  <div class="slide s4" id="s3" data-duration="18000">
+    <div class="s4-inner">
+      <div class="s4-left">
+        <div class="s4-title ap">ЗАКАЗЫВАЙ ОНЛАЙН<br><span class="or">STV39.RU</span></div>
+        <div class="s4-list">
+          <div class="s4-item ap"><div class="s4-ic"><svg viewBox="0 0 40 40" fill="none"><circle cx="17" cy="17" r="10" stroke="#E8420A" stroke-width="2.8"/><path d="M25 25l10 10" stroke="#1B3073" stroke-width="2.8" stroke-linecap="round"/></svg></div><div class="s4-txt">Удобный поиск товаров</div></div>
+          <div class="s4-item ap"><div class="s4-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M5 5h14L35 22 22 35 5 18V5z" stroke="#1B3073" stroke-width="2.5" stroke-linejoin="round"/><circle cx="13" cy="13" r="3" fill="#E8420A"/><circle cx="23" cy="25" r="3" fill="#E8420A"/><path d="M14 26L26 14" stroke="#E8420A" stroke-width="2" stroke-linecap="round"/></svg></div><div class="s4-txt">Больше скидок при заказе онлайн</div></div>
+          <div class="s4-item ap"><div class="s4-ic"><svg viewBox="0 0 40 40" fill="none"><rect x="5" y="5" width="30" height="30" rx="4" stroke="#1B3073" stroke-width="2.5"/><path d="M12 20l6 6 10-12" stroke="#E8420A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="s4-txt">Актуальное наличие на складе</div></div>
+          <div class="s4-item ap"><div class="s4-ic"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="15" stroke="#1B3073" stroke-width="2.5"/><path d="M20 10v10l6 6" stroke="#E8420A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="s4-txt">Оформление заказа в удобное время</div></div>
+          <div class="s4-item ap"><div class="s4-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M6 18l3-10h22l3 10H6z" stroke="#1B3073" stroke-width="2.5" stroke-linejoin="round"/><rect x="6" y="18" width="28" height="17" rx="1" stroke="#1B3073" stroke-width="2.5"/><rect x="16" y="25" width="8" height="10" rx="1" fill="#E8420A"/></svg></div><div class="s4-txt">Бесплатный самовывоз</div></div>
+        </div>
+      </div>
+      <div class="s4-right ap">
+        <div class="qr-label">Сканируй и заходи</div>
+        <div class="qr-box"><div id="qrSite"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: СКИДКИ ОНЛАЙН -->
+  <div class="slide s5" id="s4" data-duration="18000">
+    <div class="eyebrow ap">Выгоднее покупать онлайн</div>
+    <div class="s5-title ap">СКИДКА ПРИ РАЗОВОЙ ПОКУПКЕ</div>
+    <div class="s5-sub ap">на сайте stv39.ru</div>
+    <div class="disc-list">
+      <div class="disc-row ap"><div class="disc-from">от <b>10 000 ₽</b></div><div class="disc-pct">3%</div></div>
+      <div class="disc-row ap"><div class="disc-from">от <b>20 000 ₽</b></div><div class="disc-pct">6%</div></div>
+      <div class="disc-row ap"><div class="disc-from">от <b>40 000 ₽</b></div><div class="disc-pct">8%</div></div>
+      <div class="disc-row ap"><div class="disc-from">от <b>60 000 ₽</b></div><div class="disc-pct">10%</div></div>
+      <div class="disc-row ap"><div class="disc-from">от <b>400 000 ₽</b></div><div class="disc-pct">15%</div></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: КАРТА КЛИЕНТА -->
+  <div class="slide s6" id="s5" data-duration="26000">
+    <div class="eyebrow wh ap">Программа лояльности</div>
+    <div class="s6-title ap">КАК ПОЛУЧИТЬ КАРТУ <span class="or">ПОСТОЯННОГО КЛИЕНТА</span></div>
+    <div class="card-list">
+      <div class="loy-card ap">
+        <div class="loy-pct">6%</div>
+        <div class="loy-info">
+          <div class="loy-cond">При покупках от <b>60 000 ₽</b> за год</div>
+          <div class="loy-cond">или разовой покупке на <b>40 000 ₽</b></div>
+        </div>
+      </div>
+      <div class="loy-card ap">
+        <div class="loy-pct">8%</div>
+        <div class="loy-info">
+          <div class="loy-cond">При покупках от <b>200 000 ₽</b> за год</div>
+          <div class="loy-cond">или разовой покупке на <b>60 000 ₽</b></div>
+        </div>
+      </div>
+      <div class="loy-card ap">
+        <div class="loy-pct">10%</div>
+        <div class="loy-info">
+          <div class="loy-cond">При покупках от <b>600 000 ₽</b> за год</div>
+          <div class="loy-cond">или разовой покупке на <b>400 000 ₽</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: ДОСТАВКА -->
+  <div class="slide s7" id="s6" data-duration="16000">
+    <div class="s7-bg">FREE</div>
+    <div class="s7-title ap">БЕСПЛАТНО<br>ДОСТАВИМ</div>
+    <div class="s7-sub ap">ваш заказ по городу при заказе<br>в интернет-магазине от <b>20 000 рублей</b></div>
+    <div class="s7-note ap">подробнее на stv39.ru</div>
+  </div>
+
+  <!-- SLIDE 8: TG СКИДКА -->
+  <div class="slide s8" id="s7" data-duration="18000">
+    <div class="s8-inner">
+      <div class="s8-left">
+        <div class="s8-badge ap">✈️ Telegram-канал</div>
+        <div class="s8-big ap"><span class="wh">СКИДКА</span> <span class="or2">5%</span></div>
+        <div class="s8-subt ap">НА ПЕРВУЮ ПОКУПКУ!</div>
+        <div class="s8-desc ap">Для подписавшихся в нашем Telegram-канале</div>
+        <div class="s8-steps">
+          <div class="s8-step ap"><div class="s8-n">1</div><div class="s8-t">Подпишись: <b>@electrocenter39</b></div></div>
+          <div class="s8-step ap"><div class="s8-n">2</div><div class="s8-t">Напиши нам в Telegram: <b>@electrocentre</b></div></div>
+          <div class="s8-step ap"><div class="s8-n">3</div><div class="s8-t">Получи персональный купон на скидку</div></div>
+        </div>
+      </div>
+      <div class="s8-right ap">
+        <div class="s8-ql">Подписаться</div>
+        <div class="s8-qr-wrap"><div id="qrTg"></div></div>
+        <div class="s8-qlink">t.me/electrocenter39</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: TG ФОТО 1 -->
+  <div class="slide tg-slide" id="s8" data-duration="18000">
+    <div class="tg-media"><div class="tg-no-media">📷</div><img id="tgBg1" class="tg-photo-bg" src="" alt=""><img id="tgImg1" class="tg-photo" src="" alt=""></div>
+    <div class="tg-grad"></div><div class="tg-grad-top"></div>
+    <div class="tg-top">
+      <div class="tg-ava">⚡</div>
+      <div><div class="tg-chname">ЭлектроЦентр</div><div class="tg-subname">t.me/electrocentre39</div></div>
+      <div class="tg-dt" id="tgDate1">—</div>
+      <div class="tg-type-badge">📷 Фото</div>
+    </div>
+    <div class="tg-bottom">
+      <div class="tg-text-col">
+        <div class="tg-headline" id="tgTitle1">ЭлектроЦентр</div>
+        <div class="tg-desc" id="tgText1">Загружаем свежие новости...</div>
+      </div>
+      <div class="tg-qr-col">
+        <div class="tg-qr-label">Весь пост<br>в нашем Telegram</div>
+        <div class="tg-qr-wrap" id="tgQr1"></div>
+        <div class="tg-qr-link">t.me/electrocentre39</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: TG ФОТО 2 -->
+  <div class="slide tg-slide" id="s9" data-duration="18000">
+    <div class="tg-media"><div class="tg-no-media">📷</div><img id="tgBg2" class="tg-photo-bg" src="" alt=""><img id="tgImg2" class="tg-photo" src="" alt=""></div>
+    <div class="tg-grad"></div><div class="tg-grad-top"></div>
+    <div class="tg-top">
+      <div class="tg-ava">⚡</div>
+      <div><div class="tg-chname">ЭлектроЦентр</div><div class="tg-subname">t.me/electrocentre39</div></div>
+      <div class="tg-dt" id="tgDate2">—</div>
+      <div class="tg-type-badge">📷 Фото</div>
+    </div>
+    <div class="tg-bottom">
+      <div class="tg-text-col">
+        <div class="tg-headline" id="tgTitle2">ЭлектроЦентр</div>
+        <div class="tg-desc" id="tgText2">Загружаем свежие новости...</div>
+      </div>
+      <div class="tg-qr-col">
+        <div class="tg-qr-label">Весь пост<br>в нашем Telegram</div>
+        <div class="tg-qr-wrap" id="tgQr2"></div>
+        <div class="tg-qr-link">t.me/electrocentre39</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: TG ВИДЕО -->
+  <div class="slide tg-slide" id="s10" data-duration="25000">
+    <div class="tg-media">
+      <div class="tg-no-media">🎬</div>
+      <img id="tgBg3" class="tg-photo-bg" src="" alt="">
+      <video id="tgVideo" muted playsinline loop></video>
+      <img id="tgImg3" class="tg-photo" src="" alt="">
+    </div>
+    <div class="tg-grad"></div><div class="tg-grad-top"></div>
+    <div class="tg-play-btn" id="tgPlayBtn">▶</div>
+    <div class="tg-top">
+      <div class="tg-ava">⚡</div>
+      <div><div class="tg-chname">ЭлектроЦентр</div><div class="tg-subname">t.me/electrocentre39</div></div>
+      <div class="tg-dt" id="tgDate3">—</div>
+      <div class="tg-type-badge">🎬 Видео</div>
+    </div>
+    <div class="tg-bottom">
+      <div class="tg-text-col">
+        <div class="tg-headline" id="tgTitle3">ЭлектроЦентр</div>
+        <div class="tg-desc" id="tgText3">Загружаем видео...</div>
+      </div>
+      <div class="tg-qr-col">
+        <div class="tg-qr-label">Весь пост<br>в нашем Telegram</div>
+        <div class="tg-qr-wrap" id="tgQr3"></div>
+        <div class="tg-qr-link">t.me/electrocentre39</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /stage -->
+
+<!-- ══ TICKER ══ -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <span>⚡ stv39.ru — более 20 000 позиций в наличии</span><span class="ts">·</span>
+    <span>🚚 Бесплатная доставка при заказе от 20 000 ₽</span><span class="ts">·</span>
+    <span>🏢 Юридическим лицам — персональный менеджер, НДС, отсрочка платежа</span><span class="ts">·</span>
+    <span>✈️ Telegram t.me/electrocenter39 — скидка 5% на первую покупку</span><span class="ts">·</span>
+    <span>📞 +7 (4012) 55-55-14 — консультация специалиста</span><span class="ts">·</span>
+    <span>📍 Большое Исаково, ул. Старокаменная, 35 · Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span><span class="ts">·</span>
+    <span>⚡ stv39.ru — более 20 000 позиций в наличии</span><span class="ts">·</span>
+    <span>🚚 Бесплатная доставка при заказе от 20 000 ₽</span><span class="ts">·</span>
+    <span>🏢 Юридическим лицам — персональный менеджер, НДС, отсрочка платежа</span><span class="ts">·</span>
+    <span>✈️ Telegram t.me/electrocenter39 — скидка 5% на первую покупку</span><span class="ts">·</span>
+    <span>📞 +7 (4012) 55-55-14 — консультация специалиста</span><span class="ts">·</span>
+    <span>📍 Большое Исаково, ул. Старокаменная, 35 · Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span><span class="ts">·</span>
+  </div>
+</div>
+
+<!-- ══ BOTTOM BAR ══ -->
+<div class="bot">
+  <div class="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+  <div class="dots-wrap" id="dotsWrap"></div>
+  <div class="bot-info">stv39.ru · ЭлектроЦентр · +7 (4012) 55-55-14</div>
+</div>
+
+<script>
+// ── Clock ──
+function tick(){
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+tick(); setInterval(tick,1000);
+
+// ── Slides ──
+const slides = document.querySelectorAll('.slide');
+let cur = 0, timer;
+
+// Build dots
+(function(){
+  const w = document.getElementById('dotsWrap');
+  slides.forEach((_,i)=>{
+    const d = document.createElement('div');
+    d.className = 'sdot' + (i===0?' on':'');
+    d.onclick = ()=>{ clearInterval(timer); goTo(i); };
+    w.appendChild(d);
+  });
+})();
+
+function updateDots(i){
+  document.querySelectorAll('.sdot').forEach((d,j)=>d.classList.toggle('on',j===i));
+}
+
+function getDuration(el){
+  return parseInt(el.dataset.duration)||8000;
+}
+
+function animateItems(slideEl){
+  slideEl.querySelectorAll('.ap').forEach((item,i)=>{
+    setTimeout(()=>item.classList.add('show'), 200 + i*600);
+  });
+}
+
+function resetItems(slideEl){
+  slideEl.querySelectorAll('.ap').forEach(item=>item.classList.remove('show'));
+}
+
+function goTo(idx){
+  const fl = document.getElementById('fl');
+  fl.classList.add('on');
+
+  // Переключаем слайд пока fl белый (закрывает экран)
+  setTimeout(()=>{
+    resetItems(slides[cur]);
+    slides[cur].classList.remove('on');
+    cur = ((idx % slides.length) + slides.length) % slides.length;
+    slides[cur].classList.add('on');
+    updateDots(cur);
+    fl.classList.remove('on');
+    const _s = slides[cur];
+    setTimeout(()=>animateItems(_s), 50);
+  }, 120);
+
+  startProg();
+}
+
+function startProg(){
+  clearInterval(timer);
+  const dur = getDuration(slides[cur]);
+  let elapsed = 0;
+  const fill = document.getElementById('progFill');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  setTimeout(()=>{ fill.style.transition = 'width 0.1s linear'; }, 50);
+  timer = setInterval(()=>{
+    elapsed += 100;
+    fill.style.width = Math.min(elapsed/dur*100,100)+'%';
+    if(elapsed >= dur){ clearInterval(timer); goTo(cur+1); }
+  },100);
+}
+
+// Init — небольшой delay чтобы браузер успел отрисовать DOM
+slides[0].classList.add('on'); // на случай если HTML-атрибут не применился
+requestAnimationFrame(()=>{
+  setTimeout(()=>animateItems(slides[0]), 100);
+});
+startProg();
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){ clearInterval(timer); goTo(cur+1); }
+  if(e.key==='ArrowLeft') { clearInterval(timer); goTo(cur-1); }
+});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  if(typeof QRCode === 'undefined') return;
+  new QRCode(document.getElementById('qrSite'),{
+    text:'https://stv39.ru',
+    width:300, height:300,
+    colorDark:'#1B3073', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+  new QRCode(document.getElementById('qrTg'),{
+    text:'https://t.me/electrocenter39',
+    width:300, height:300,
+    colorDark:'#1B3073', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+  // QR на TG слайдах
+  ['tgQr1','tgQr2','tgQr3'].forEach(function(id){
+    new QRCode(document.getElementById(id),{
+      text:'https://t.me/electrocentre39',
+      width:120, height:120,
+      colorDark:'#1B3073', colorLight:'#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  });
+});
+</script>
+
+<script>
+// ══ ЗАГРУЗКА ПОСТОВ ЧЕРЕЗ N8N WEBHOOK ══
+const TG_WEBHOOK = 'https://kokolsk1y.app.n8n.cloud/webhook/tv-posts';
+
+function decodeHtml(str) {
+  const t = document.createElement('textarea');
+  t.innerHTML = str;
+  return t.value;
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
+async function fetchTgPosts() {
+  try {
+    const res = await fetch(TG_WEBHOOK, { cache: 'no-store' });
+    if (!res.ok) { console.warn('TV webhook error:', res.status); return; }
+    const data = await res.json();
+    const posts = data.posts || [];
+    const photos = posts.filter(p => p.type === 'photo');
+    const videos = posts.filter(p => p.type === 'video');
+
+    // Разбивает текст поста: первая смысловая строка → заголовок, остальное → описание
+    function splitText(raw) {
+      const text = decodeHtml(raw || '').replace(/\r/g, '');
+      // Убираем множественные пустые строки
+      const clean = text.replace(/\n{3,}/g, '\n\n').trim();
+      // Делим на параграфы
+      const parts = clean.split(/\n\n+/);
+      const firstLine = (parts[0] || '').split('\n')[0].trim();
+      // Если первая строка короткая — это заголовок, остальное — описание
+      if (firstLine.length <= 80 && parts.length > 1) {
+        const desc = clean.slice(clean.indexOf('\n') + 1).replace(/\n+/g, ' ').trim();
+        return { title: firstLine, desc };
+      }
+      // Иначе — вся первая строка как headline, продолжение как desc
+      const rest = clean.slice(firstLine.length).replace(/\n+/g, ' ').trim();
+      return { title: firstLine, desc: rest };
+    }
+
+    function setPost(idx, post) {
+      const { title, desc } = splitText(post.text);
+      document.getElementById('tgTitle' + idx).textContent = title;
+      document.getElementById('tgText' + idx).textContent = desc;
+      document.getElementById('tgDate' + idx).textContent = formatDate(post.date);
+    }
+
+    function setPhoto(idx, post) {
+      setPost(idx, post);
+      if (post.img) {
+        const img = document.getElementById('tgImg' + idx);
+        const bg  = document.getElementById('tgBg'  + idx);
+        img.onload = () => {
+          img.style.display = 'block';
+          if (bg) { bg.src = post.img; bg.style.display = 'block'; }
+        };
+        img.src = post.img;
+      }
+    }
+
+    if (photos[0]) setPhoto(1, photos[0]);
+    if (photos[1]) setPhoto(2, photos[1]);
+
+    // Слайд видео
+    const v1 = videos[0];
+    if (v1) {
+      setPost(3, v1);
+      if (v1.videoUrl) {
+        const vid = document.getElementById('tgVideo');
+        vid.src = v1.videoUrl;
+        vid.style.display = 'block';
+      } else if (v1.videoThumb) {
+        const img3 = document.getElementById('tgImg3');
+        const bg3  = document.getElementById('tgBg3');
+        img3.onload = () => {
+          img3.style.display = 'block';
+          if (bg3) { bg3.src = v1.videoThumb; bg3.style.display = 'block'; }
+          document.getElementById('tgPlayBtn').style.display = 'flex';
+        };
+        img3.src = v1.videoThumb;
+      }
+    }
+
+  } catch(e) {
+    console.warn('TV fetch error:', e);
+  }
+}
+
+// Управление воспроизведением видео при переключении слайдов
+(function(){
+  const videoSlideId = 's10';
+  const origGoTo = window.goTo;
+  // Используем MutationObserver чтобы отследить добавление/удаление класса .on
+  const videoSlide = document.getElementById(videoSlideId);
+  if (!videoSlide) return;
+  const observer = new MutationObserver(() => {
+    const video = document.getElementById('tgVideo');
+    if (!video || !video.src) return;
+    if (videoSlide.classList.contains('on')) {
+      video.currentTime = 0;
+      video.play().catch(()=>{});
+    } else {
+      video.pause();
+    }
+  });
+  observer.observe(videoSlide, { attributes: true, attributeFilter: ['class'] });
+})();
+
+fetchTgPosts();
+setInterval(fetchTgPosts, 30 * 60 * 1000);
+</script>
+
+</body>
+</html>
