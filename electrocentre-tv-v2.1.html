@@ -52,10 +52,6 @@ html, body {
   user-select: none;
 }
 
-/* ══ FLASH ══ */
-.fl { position:absolute; top:74px; bottom:68px; left:0; right:0; background:#fff; opacity:0; pointer-events:none; z-index:100; transition:opacity 0.2s; }
-.fl.on { opacity:1; }
-
 /* ══ HEADER ══ */
 .hdr {
   position:absolute; top:0; left:0; right:0; height:70px;
@@ -88,13 +84,16 @@ html, body {
 
 /* ══ SLIDE BASE ══ */
 .slide {
-  position:absolute; inset:0;
-  display:none; flex-direction:column;
+  position:absolute;
+  top:0; left:0; right:0; bottom:0;
+  display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   text-align:center; padding:40px 80px;
+  opacity:0;
+  transition:opacity 0.4s ease;
   pointer-events:none; overflow:hidden;
 }
-.slide.on { display:flex; pointer-events:auto; }
+.slide.on { opacity:1; pointer-events:auto; }
 
 /* ══ APPEAR ITEMS ══ */
 .ap {
