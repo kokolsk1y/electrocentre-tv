@@ -84,7 +84,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 }
 .scene .sc-main, .scene .sc-sub, .scene .sc-sub-big,
 .scene .sc-browser, .scene .sc3-card,
-.scene .stair-step, .scene .max-label, .scene .qr-box,
+.scene .stair-step, .scene .qr-box,
 .scene .sc1-brand, .scene .sc1-site { opacity:0; }
 
 @keyframes scIn  { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
@@ -153,7 +153,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   animation:stepRiseTop .9s 26.7s cubic-bezier(0.34,1.56,0.64,1) forwards,
             maxPulse 1.8s 28.0s infinite ease-in-out;
 }
-.sc4 .max-label { animation:maxLabelIn 0.7s 28.0s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 .sc4 .max-ring { animation:ringBurst 1.2s 27.3s ease-out forwards; }
 .sc4 .max-ring-2 { animation:ringBurst 1.4s 27.6s ease-out forwards; }
 @keyframes stepRise {
@@ -168,10 +167,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 @keyframes maxPulse {
   0%,100% { box-shadow:0 0 40px rgba(232,66,10,0.5), 0 -4px 30px rgba(255,215,0,0.3), inset 0 0 30px rgba(255,215,0,0.15); }
   50%     { box-shadow:0 0 90px rgba(232,66,10,0.8), 0 -4px 60px rgba(255,215,0,0.6), inset 0 0 50px rgba(255,215,0,0.3); }
-}
-@keyframes maxLabelIn {
-  0%{opacity:0;transform:translateY(20px) scale(0.6);}
-  100%{opacity:1;transform:translateY(0) scale(1);}
 }
 @keyframes ringBurst {
   0%{opacity:1;transform:translate(-50%,-50%) scale(0.3);}
@@ -188,6 +183,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   0%,100% { box-shadow:0 0 40px rgba(255,255,255,0.3), 0 0 80px rgba(90,200,255,0.4); }
   50%     { box-shadow:0 0 70px rgba(255,255,255,0.5), 0 0 140px rgba(90,200,255,0.7); }
 }
+/* sc5 — воздух между блоками */
+.sc5 .sc-main    { margin-bottom:48px; }
+.sc5 .qr-box     { margin-bottom:42px; }
+.sc5 .sc-sub-big { margin-top:0; margin-bottom:18px; font-size:54px; letter-spacing:4px; }
+.sc5 .sc-sub     { margin-top:0; font-size:32px; }
 
 /* ═══ Типографика ═══ */
 .sc-main { font-size:64px; font-weight:900; color:var(--wh); line-height:1.15; letter-spacing:-1px; }
@@ -332,15 +332,15 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .stair-row {
   display:flex; gap:18px; align-items:flex-end; justify-content:center;
   margin-top:40px;
-  padding-top:90px; /* место для max-label над 5-й ступенью */
+  padding-top:30px;
   position:relative;
 }
 .stair-step {
-  width:210px;
+  width:290px;
   border-radius:14px 14px 10px 10px;
   display:flex; flex-direction:column;
   align-items:center; justify-content:space-between;
-  padding:22px 12px;
+  padding:22px 14px;
   position:relative;
   transform-origin:bottom center;
 }
@@ -381,12 +381,12 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   text-shadow:0 3px 14px rgba(0,0,0,0.45);
   margin:0;
 }
-.stair-step:nth-child(1) .step-pct { font-size:60px; }
-.stair-step:nth-child(2) .step-pct { font-size:74px; }
-.stair-step:nth-child(3) .step-pct { font-size:90px; }
+.stair-step:nth-child(1) .step-pct { font-size:64px; }
+.stair-step:nth-child(2) .step-pct { font-size:78px; }
+.stair-step:nth-child(3) .step-pct { font-size:92px; }
 .stair-step:nth-child(4) .step-pct { font-size:108px; }
 .stair-step:nth-child(5) .step-pct {
-  font-size:130px;
+  font-size:124px;
   text-shadow:0 0 35px rgba(255,220,0,0.75), 0 3px 14px rgba(0,0,0,0.5);
 }
 .stair-step .step-sum {
@@ -401,27 +401,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .stair-step:nth-child(5) .step-sum { border-top-color:rgba(255,230,100,0.6); }
 .stair-step:nth-child(5) .step-sum b { font-size:22px; color:#FFE066; }
 
-/* Максимум — лейбл со стрелкой над 5-й ступенью */
-.max-label {
-  position:absolute; top:-62px; left:50%;
-  transform:translateX(-50%);
-  background:linear-gradient(135deg,#FFE066,#FFA500,#E8420A);
-  color:#fff; padding:11px 20px;
-  border-radius:9px;
-  font-size:17px; font-weight:900; letter-spacing:1.5px;
-  white-space:nowrap;
-  text-transform:uppercase;
-  box-shadow:0 8px 22px rgba(232,66,10,0.55), 0 0 0 1.5px rgba(255,255,255,0.35) inset;
-  z-index:3;
-}
-.max-label::after {
-  content:''; position:absolute; top:100%; left:50%;
-  transform:translateX(-50%);
-  width:0; height:0;
-  border-left:10px solid transparent;
-  border-right:10px solid transparent;
-  border-top:12px solid #E8420A;
-}
+/* (max-label убран по запросу — остаётся визуальный акцент через размер, цвет и кольца) */
 .max-ring, .max-ring-2 {
   position:absolute; top:50%; left:50%;
   width:200px; height:200px;
@@ -550,7 +530,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
       <div class="stair-step">
         <div class="max-ring"></div>
         <div class="max-ring-2"></div>
-        <div class="max-label">МАКСИМАЛЬНАЯ ВЫГОДА</div>
         <div class="step-pct" data-target="15">0%</div>
         <div class="step-sum">от<br><b>600 000 ₽</b></div>
       </div>
@@ -638,8 +617,8 @@ setTimeout(function(){countUp(pcts[4],15)},26700);
     }
     style.textContent=rules;
     document.head.appendChild(style);
-    /* Координаты 5-й ступени: центр x ≈1420, y ≈680 (новая лестница) */
-    var cx=1420, cy=680;
+    /* Координаты 5-й ступени: центр x ≈1576, y ≈650 (ширина 290px) */
+    var cx=1576, cy=650;
     for(var i=0;i<100;i++){
       var c=document.createElement('div');
       var sz=5+Math.random()*11;
