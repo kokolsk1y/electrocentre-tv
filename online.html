@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЭлектроЦентр — Заказывай онлайн на stv39.ru</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --blue:#1B3073; --or:#E8420A; --or2:#FF6B2B; --wh:#FFFFFF; --cyan:#5AC8FF; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0; padding:0; }
+
+#wrap {
+  width:1920px; height:1080px; position:absolute; top:0; left:0;
+  transform-origin:top left; overflow:hidden;
+  background:linear-gradient(135deg,#0d1840,#1B3073,#182860,#1B3073,#142050);
+  background-size:400% 400%; animation:gradShift 30s ease infinite;
+  font-family:'Montserrat',sans-serif; cursor:none; user-select:none;
+}
+@keyframes gradShift {
+  0%{background-position:0% 50%} 25%{background-position:100% 25%}
+  50%{background-position:50% 100%} 75%{background-position:0% 75%} 100%{background-position:0% 50%}
+}
+
+.geo-grid {
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    radial-gradient(circle, rgba(90,200,255,0.1) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size:80px 80px;
+  opacity:0.45;
+  animation:gridPulse 5s ease-in-out infinite, gridDrift 40s linear infinite;
+}
+@keyframes gridPulse { 0%,100%{opacity:.3} 50%{opacity:.6} }
+@keyframes gridDrift { 0%{background-position:0 0} 100%{background-position:80px 80px} }
+
+.bg-sym {
+  position:absolute; font-size:420px; font-weight:900;
+  color:transparent; -webkit-text-stroke:1px rgba(255,255,255,0.025);
+  top:50%; left:50%; pointer-events:none; white-space:nowrap;
+  animation:kenBurns 30s ease-in-out forwards;
+}
+@keyframes kenBurns { 0%{transform:translate(-50%,-50%) scale(1)} 100%{transform:translate(-50%,-50%) scale(1.2) rotate(3deg)} }
+
+.vignette { position:absolute; inset:0; z-index:2; pointer-events:none; background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.5) 100%); }
+.light-sweep {
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.035) 44%, rgba(90,200,255,0.06) 50%, rgba(255,255,255,0.035) 56%, transparent 62%);
+  transform:translateX(-120%);
+  animation:lightSweep 7s 1.5s infinite ease-in-out;
+}
+@keyframes lightSweep { 0%{transform:translateX(-120%)} 45%{transform:translateX(120%)} 100%{transform:translateX(120%)} }
+
+.particles { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+.particle { position:absolute; bottom:-20px; }
+.particle.pixel { background:rgba(90,200,255,0.35); border-radius:2px; box-shadow:0 0 8px rgba(90,200,255,0.4); }
+.particle.pixel.or { background:rgba(255,107,43,0.4); box-shadow:0 0 8px rgba(255,107,43,0.5); }
+.particle.bit { color:rgba(90,200,255,0.35); font-family:'Courier New',monospace; font-weight:700; font-size:20px; text-shadow:0 0 6px rgba(90,200,255,0.5); }
+@keyframes floatUp {
+  0%{transform:translateY(0) rotate(0deg);opacity:0} 8%{opacity:1} 85%{opacity:.7}
+  100%{transform:translateY(-1100px) rotate(180deg);opacity:0}
+}
+
+.progress-bar { position:absolute; bottom:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.08); z-index:10; }
+.progress-fill { height:100%; width:0; background:linear-gradient(90deg,var(--or),var(--or2)); animation:progFill 47s linear forwards; }
+@keyframes progFill { to{width:100%} }
+.scene-dots { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:10; }
+.scene-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.15); transition:all .5s; }
+.scene-dot.active { background:var(--or); transform:scale(1.3); box-shadow:0 0 12px rgba(232,66,10,0.5); }
+
+.scene {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:60px 80px; opacity:0; z-index:1;
+}
+.scene .sc-main, .scene .sc-sub, .scene .sc-sub-big,
+.scene .phone-wrap, .scene .reason-card,
+.scene .counter-wrap, .scene .qr-box,
+.scene .sc1-brand, .scene .sc1-site { opacity:0; }
+
+@keyframes scIn  { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scPop { from{opacity:0;transform:scale(0.7)} to{opacity:1;transform:scale(1)} }
+@keyframes zoomIn      { 0%{opacity:0;transform:scale(0.3)} 100%{opacity:1;transform:scale(1)} }
+@keyframes zoomOut     { 0%{opacity:1;transform:scale(1)} 60%{opacity:.5} 100%{opacity:0;transform:scale(2.2)} }
+@keyframes wipeLeftOut { 0%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(-100%) scale(0.9)} }
+@keyframes wipeRightIn { 0%{opacity:0;transform:translateX(100%)} 20%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
+@keyframes wipeRightOut{ 0%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(100%) scale(0.9)} }
+@keyframes wipeLeftIn  { 0%{opacity:0;transform:translateX(-100%)} 20%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
+@keyframes irisOut     { 0%{clip-path:circle(150% at 50% 50%);opacity:1} 100%{clip-path:circle(0% at 50% 50%);opacity:0} }
+@keyframes irisIn      { 0%{clip-path:circle(0% at 50% 50%);opacity:1} 100%{clip-path:circle(150% at 50% 50%);opacity:1} }
+
+/* Scene 1 (0→5s) */
+.sc1 { animation:zoomIn .8s .2s forwards, wipeLeftOut .7s 4.3s forwards; }
+.sc1 .sc1-brand { animation:scIn .5s .3s forwards; }
+.sc1 .sc-main { animation:none; opacity:1; }
+.sc1 .sc-sub  { animation:scIn .5s 1.4s forwards; }
+.sc1 .sc1-site { animation:scIn .5s 1.8s forwards, siteGlow 2s 2.5s infinite ease-in-out; }
+@keyframes siteGlow {
+  0%,100% { text-shadow:0 0 20px rgba(232,66,10,0.4); }
+  50%     { text-shadow:0 0 40px rgba(232,66,10,0.9), 0 0 60px rgba(232,66,10,0.5); }
+}
+.letter { display:inline-block; opacity:0; transform:translateY(24px) scale(0.85); animation:letterIn .4s forwards; }
+@keyframes letterIn { to{opacity:1;transform:translateY(0) scale(1)} }
+.sc-word-reveal { display:inline-block; opacity:0; transform:translateY(16px); animation:scIn .6s forwards; }
+
+/* Scene 2: Phone mockup (5→16s) */
+.sc2 { animation:wipeRightIn .7s 5.0s forwards, zoomOut .6s 15.3s forwards; }
+.sc2 .phone-wrap { animation:phoneFlip 1.2s 5.4s cubic-bezier(0.34,1.56,0.64,1) forwards, levitate 3.5s 7s infinite ease-in-out; }
+.sc2 .sc-main { animation:scIn .6s 7.0s forwards; }
+.sc2 .sc-sub  { animation:scIn .5s 7.8s forwards; }
+.sc2 .app-cart-btn { animation:cartPulse 1.8s 10.5s infinite ease-in-out; }
+.sc2 .app-cart-badge { animation:badgePopIn .6s 10.2s cubic-bezier(0.34,1.56,0.64,1) forwards, badgeFloat 2s 11s infinite ease-in-out; }
+@keyframes phoneFlip {
+  0%{opacity:0;transform:rotateY(90deg) scale(0.5)}
+  30%{opacity:1}
+  55%{transform:rotateY(-10deg) scale(1.03)}
+  75%{transform:rotateY(4deg) scale(1)}
+  100%{opacity:1;transform:rotateY(0deg) scale(1)}
+}
+@keyframes levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+@keyframes cartPulse {
+  0%,100% { box-shadow:0 4px 12px rgba(232,66,10,0.45); transform:scale(1); }
+  50%     { box-shadow:0 4px 24px rgba(232,66,10,0.75); transform:scale(1.04); }
+}
+@keyframes badgePopIn {
+  0% { opacity:0; transform:scale(0) translate(0,0); }
+  60% { transform:scale(1.3) translate(0,-8px); }
+  100% { opacity:1; transform:scale(1) translate(0,-4px); }
+}
+@keyframes badgeFloat {
+  0%,100% { transform:scale(1) translate(0,-4px); }
+  50%     { transform:scale(1.05) translate(0,-10px); }
+}
+
+/* Scene 3: 5 причин (16→30s) */
+.sc3 { animation:zoomIn .7s 16.0s forwards, wipeRightOut .7s 29.3s forwards; }
+.sc3 .sc-main { animation:scIn .6s 16.3s forwards; }
+.sc3 .reason-card:nth-child(1) { animation:cardFlipIn .8s 17.3s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc3 .reason-card:nth-child(2) { animation:cardFlipIn .8s 18.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc3 .reason-card:nth-child(3) { animation:cardFlipIn .8s 19.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc3 .reason-card:nth-child(4) { animation:cardFlipIn .8s 20.6s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc3 .reason-card:nth-child(5) { animation:cardFlipIn .8s 21.7s cubic-bezier(0.34,1.56,0.64,1) forwards, cardHighlight 2.5s 23.5s infinite; }
+@keyframes cardFlipIn {
+  0%{opacity:0;transform:rotateY(60deg) translateY(40px) scale(0.8)}
+  100%{opacity:1;transform:rotateY(0deg) translateY(0) scale(1)}
+}
+@keyframes cardHighlight {
+  0%,100% { border-color:rgba(255,255,255,0.12); box-shadow:0 0 0 rgba(232,66,10,0); }
+  50%     { border-color:rgba(232,66,10,0.45); box-shadow:0 0 30px rgba(232,66,10,0.35); }
+}
+
+/* Scene 4: Counter 20 000 (30→40s) */
+.sc4 { animation:wipeLeftIn .7s 30.0s forwards, irisOut .7s 39.3s forwards; }
+.sc4 .counter-wrap { animation:scIn .6s 30.4s forwards; }
+.sc4 .counter-big { animation:numGlow 2s 31.0s infinite ease-in-out; }
+@keyframes numGlow {
+  0%,100% { text-shadow:0 0 40px rgba(232,66,10,0.45), 0 0 80px rgba(232,66,10,0.2); }
+  50%     { text-shadow:0 0 70px rgba(232,66,10,0.75), 0 0 140px rgba(232,66,10,0.4); }
+}
+
+/* Scene 5: QR (40→47s) */
+.sc5 { animation:irisIn .7s 40.0s forwards, zoomOut .5s 46.0s forwards; }
+.sc5 .sc-main    { animation:scIn .5s 40.4s forwards; }
+.sc5 .qr-box     { animation:scPop .6s 40.7s forwards, qrPulse 2s 41.5s infinite ease-in-out; }
+.sc5 .sc-sub-big { animation:scIn .5s 41.6s forwards; }
+.sc5 .sc-sub     { animation:scIn .5s 42.2s forwards; }
+@keyframes qrPulse {
+  0%,100% { box-shadow:0 0 40px rgba(255,255,255,0.3), 0 0 80px rgba(90,200,255,0.4); }
+  50%     { box-shadow:0 0 70px rgba(255,255,255,0.5), 0 0 140px rgba(90,200,255,0.7); }
+}
+.sc5 .sc-main    { margin-bottom:48px; }
+.sc5 .qr-box     { margin-bottom:42px; }
+.sc5 .sc-sub-big { margin-top:0; margin-bottom:18px; font-size:54px; letter-spacing:4px; }
+.sc5 .sc-sub     { margin-top:0; font-size:32px; }
+
+/* Типографика */
+.sc-main { font-size:64px; font-weight:900; color:var(--wh); line-height:1.15; letter-spacing:-1px; }
+.sc-main .or { color:var(--or); }
+.sc-sub { font-size:30px; font-weight:500; color:rgba(255,255,255,0.7); margin-top:18px; }
+.sc-sub-big { font-size:44px; font-weight:800; color:var(--or); margin-top:12px; }
+.sc1 .sc-main { text-shadow:0 0 50px rgba(255,255,255,0.06); }
+
+.sc1-brand { display:flex; align-items:center; gap:24px; margin-bottom:40px; }
+.sc1-accent { width:80px; height:2px; background:linear-gradient(90deg,transparent,var(--or)); }
+.sc1-accent.right { background:linear-gradient(90deg,var(--or),transparent); }
+.sc1-name { font-size:16px; letter-spacing:10px; font-weight:700; color:rgba(255,255,255,0.45); text-transform:uppercase; padding:8px 20px; border:1px solid rgba(255,255,255,0.12); }
+.sc1-site { margin-top:32px; font-size:52px; font-weight:900; color:var(--or); letter-spacing:4px; }
+
+.grad-text {
+  background:linear-gradient(90deg,#E8420A,#FFD700,#FF6B2B,#E8420A);
+  background-size:300% 100%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  animation:gradText 3s ease infinite;
+}
+@keyframes gradText { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+/* ═══ МОКАП СМАРТФОНА (сцена 2) ═══ */
+.phone-wrap { perspective:1200px; margin-bottom:40px; position:relative; }
+.phone {
+  width:300px; height:610px;
+  background:linear-gradient(180deg,#1a1a1a,#0d0d0d);
+  border-radius:38px;
+  padding:10px;
+  position:relative; transform-style:preserve-3d;
+  box-shadow:
+    0 30px 60px rgba(0,0,0,0.6),
+    0 0 60px rgba(90,200,255,0.25),
+    0 0 120px rgba(37,72,174,0.4),
+    0 0 0 2px #333 inset;
+}
+.phone-notch {
+  position:absolute; top:20px; left:50%; transform:translateX(-50%);
+  width:110px; height:26px; background:#000; border-radius:14px; z-index:3;
+}
+.phone-screen {
+  width:100%; height:100%; background:#f5f7fa;
+  border-radius:30px; overflow:hidden;
+  display:flex; flex-direction:column;
+  position:relative;
+}
+.app-bar {
+  background:linear-gradient(180deg,#1B3073,#132557); color:#fff;
+  padding:52px 16px 12px;
+  display:flex; align-items:center; gap:10px;
+  font-size:14px; font-weight:600;
+}
+.app-bar-lock { color:#4CD964; font-size:11px; }
+.app-bar-url { flex:1; text-align:center; letter-spacing:0.5px; }
+.app-search {
+  background:#fff;
+  margin:12px; padding:12px 14px;
+  border-radius:12px;
+  display:flex; align-items:center; gap:10px;
+  font-size:14px; color:#333; font-weight:600;
+  box-shadow:0 2px 6px rgba(0,0,0,0.06);
+  border:1.5px solid #E8420A;
+}
+.app-search-icon { color:#1B3073; font-size:18px; line-height:1; }
+.app-search-text { flex:1; text-align:left; min-height:16px; }
+.app-search-cursor { display:inline-block; width:2px; height:16px; background:#1B3073; animation:blink 0.7s infinite; vertical-align:middle; }
+@keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+.app-products {
+  padding:0 10px;
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.app-product {
+  background:#fff; border-radius:10px; padding:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.06);
+}
+.app-prod-img {
+  width:100%; height:70px;
+  background:linear-gradient(135deg,#1B3073,#2548AE);
+  border-radius:8px; margin-bottom:8px;
+  position:relative;
+}
+.app-prod-img::after {
+  content:''; position:absolute; inset:20% 30%;
+  background:rgba(255,255,255,0.2);
+  border-radius:4px;
+}
+.app-prod-title {
+  height:7px; background:rgba(0,0,0,0.2);
+  border-radius:4px; margin-bottom:5px;
+  width:85%;
+}
+.app-prod-title.short { width:60%; }
+.app-prod-price {
+  font-size:13px; font-weight:900; color:#E8420A;
+}
+.app-cart-wrap { padding:12px; margin-top:auto; position:relative; }
+.app-cart-btn {
+  width:100%;
+  background:linear-gradient(135deg, #E8420A, #FF6B2B);
+  color:#fff; border:none;
+  padding:14px; font-size:15px; font-weight:900;
+  border-radius:12px; letter-spacing:1.5px;
+  box-shadow:0 4px 14px rgba(232,66,10,0.5);
+  font-family:inherit;
+}
+.app-cart-badge {
+  position:absolute; right:18px; top:-8px;
+  background:#4CD964; color:#fff;
+  padding:4px 10px; border-radius:14px;
+  font-size:13px; font-weight:900;
+  box-shadow:0 3px 10px rgba(76,217,100,0.5);
+  z-index:4;
+  opacity:0; transform:scale(0);
+}
+
+/* ═══ 5 ПРИЧИН (сцена 3) ═══ */
+.reasons-row {
+  display:flex; gap:20px; justify-content:center;
+  margin-top:50px;
+  perspective:1400px;
+}
+.reason-card {
+  width:300px; height:340px;
+  background:rgba(255,255,255,0.06);
+  border:1.5px solid rgba(255,255,255,0.12);
+  border-top:5px solid var(--or);
+  border-radius:16px;
+  padding:30px 22px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+  transform-style:preserve-3d;
+}
+.reason-num {
+  position:absolute; top:8px; right:16px;
+  font-size:38px; font-weight:900;
+  color:rgba(255,255,255,0.08); line-height:1;
+}
+.reason-bg-big {
+  position:absolute;
+  font-size:180px; font-weight:900;
+  color:rgba(255,255,255,0.03);
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  pointer-events:none; line-height:1;
+}
+.reason-icon {
+  width:76px; height:76px;
+  margin-bottom:22px;
+  color:var(--or);
+}
+.reason-icon svg { width:100%; height:100%; }
+.reason-title {
+  font-size:22px; font-weight:900;
+  color:#fff; text-align:center;
+  margin-bottom:10px; line-height:1.2;
+  letter-spacing:-0.3px;
+}
+.reason-sub {
+  font-size:16px; font-weight:500;
+  color:rgba(255,255,255,0.65);
+  text-align:center; line-height:1.35;
+}
+
+/* ═══ COUNTER (сцена 4) ═══ */
+.counter-wrap { display:flex; flex-direction:column; align-items:center; }
+.counter-label-top {
+  font-size:36px; font-weight:700;
+  color:rgba(255,255,255,0.55);
+  letter-spacing:8px;
+  margin-bottom:16px;
+}
+.counter-big {
+  font-size:240px; font-weight:900;
+  line-height:1;
+  color:#fff;
+  margin-bottom:24px;
+  display:flex; align-items:baseline;
+  letter-spacing:-6px;
+}
+.counter-big .counter-plus { color:var(--or); font-size:180px; margin-left:8px; }
+.counter-label {
+  font-size:48px; font-weight:900;
+  color:var(--or);
+  letter-spacing:6px;
+  margin-bottom:18px;
+}
+.counter-sub {
+  font-size:30px; font-weight:500;
+  color:rgba(255,255,255,0.65);
+  letter-spacing:1px;
+}
+
+/* ═══ QR-код (сцена 5) ═══ */
+.qr-box {
+  width:360px; height:360px;
+  background:#fff;
+  border-radius:24px;
+  padding:24px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:28px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.4);
+}
+.qr-box #qrCode img, .qr-box #qrCode canvas {
+  width:312px !important; height:312px !important;
+  border-radius:8px;
+}
+.sc5 .sc-main { text-shadow:0 0 30px rgba(255,255,255,0.1); }
+
+.restart {
+  position:absolute; bottom:24px; right:24px; z-index:20; padding:10px 24px;
+  background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.6); font-family:inherit; font-size:14px; font-weight:600;
+  cursor:pointer; border-radius:4px; transition:background .2s;
+}
+.restart:hover { background:rgba(255,255,255,0.2); color:#fff; }
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <div class="geo-grid"></div>
+  <div class="particles" id="particles"></div>
+  <div class="bg-sym">@</div>
+  <div class="vignette"></div>
+  <div class="light-sweep"></div>
+
+  <!-- Сцена 1 -->
+  <div class="scene sc1">
+    <div class="sc1-brand">
+      <div class="sc1-accent"></div>
+      <div class="sc1-name">ЭЛЕКТРОЦЕНТР</div>
+      <div class="sc1-accent right"></div>
+    </div>
+    <div class="sc-main" id="typed-target">ЗАКАЗЫВАЙ<br><span class="or">ОНЛАЙН</span></div>
+    <div class="sc-sub">Более 20 000 товаров в наличии</div>
+    <div class="sc1-site">STV39.RU</div>
+  </div>
+
+  <!-- Сцена 2: Мокап смартфона -->
+  <div class="scene sc2">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="app-bar">
+            <span class="app-bar-lock">🔒</span>
+            <span class="app-bar-url">stv39.ru</span>
+          </div>
+          <div class="app-search">
+            <span class="app-search-icon">⌕</span>
+            <span class="app-search-text" id="typedSearch"></span>
+            <span class="app-search-cursor"></span>
+          </div>
+          <div class="app-products">
+            <div class="app-product"><div class="app-prod-img"></div><div class="app-prod-title"></div><div class="app-prod-title short"></div><div class="app-prod-price">29 990 ₽</div></div>
+            <div class="app-product"><div class="app-prod-img"></div><div class="app-prod-title"></div><div class="app-prod-title short"></div><div class="app-prod-price">45 400 ₽</div></div>
+            <div class="app-product"><div class="app-prod-img"></div><div class="app-prod-title"></div><div class="app-prod-title short"></div><div class="app-prod-price">18 790 ₽</div></div>
+            <div class="app-product"><div class="app-prod-img"></div><div class="app-prod-title"></div><div class="app-prod-title short"></div><div class="app-prod-price">9 990 ₽</div></div>
+          </div>
+          <div class="app-cart-wrap">
+            <button class="app-cart-btn">В КОРЗИНУ</button>
+            <div class="app-cart-badge">+1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sc-main">МАГАЗИН <span class="or">В КАРМАНЕ</span></div>
+    <div class="sc-sub">Весь ассортимент на сайте — в любой момент</div>
+  </div>
+
+  <!-- Сцена 3: 5 причин -->
+  <div class="scene sc3">
+    <div class="sc-main">5 ПРИЧИН <span class="or">ЗАКАЗЫВАТЬ ОНЛАЙН</span></div>
+    <div class="reasons-row">
+      <div class="reason-card">
+        <div class="reason-bg-big">01</div>
+        <div class="reason-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="12"/><path d="M30 30l12 12"/><path d="M14 20h12"/><path d="M20 14v12"/></svg></div>
+        <div class="reason-title">УДОБНЫЙ ПОИСК</div>
+        <div class="reason-sub">Фильтры, сортировка по цене, бренду и характеристикам</div>
+      </div>
+      <div class="reason-card">
+        <div class="reason-bg-big">02</div>
+        <div class="reason-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8l18 18-12 12-18-18z"/><circle cx="15" cy="15" r="2.5" fill="currentColor"/><path d="M28 8h12v12"/><path d="M30 18l10-10"/></svg></div>
+        <div class="reason-title">СКИДКИ ДО 15%</div>
+        <div class="reason-sub">Растущая скидка от суммы заказа — на сайте выгоднее</div>
+      </div>
+      <div class="reason-card">
+        <div class="reason-bg-big">03</div>
+        <div class="reason-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="36" height="36" rx="4"/><path d="M14 24l6 6 14-14"/></svg></div>
+        <div class="reason-title">АКТУАЛЬНОЕ НАЛИЧИЕ</div>
+        <div class="reason-sub">Видно сразу, что и сколько есть на складе</div>
+      </div>
+      <div class="reason-card">
+        <div class="reason-bg-big">04</div>
+        <div class="reason-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="20"/><path d="M24 12v12l8 6"/></svg></div>
+        <div class="reason-title">В ЛЮБОЕ ВРЕМЯ</div>
+        <div class="reason-sub">Оформление 24/7 — когда удобно именно вам</div>
+      </div>
+      <div class="reason-card">
+        <div class="reason-bg-big">05</div>
+        <div class="reason-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l3-10h22l3 10H4z"/><rect x="4" y="18" width="28" height="16" rx="1"/><rect x="32" y="22" width="12" height="12" rx="1"/><circle cx="12" cy="38" r="4"/><circle cx="36" cy="38" r="4"/></svg></div>
+        <div class="reason-title">БЕСПЛАТНО ДОСТАВИМ</div>
+        <div class="reason-sub">По городу при заказе от 20 000 ₽</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Сцена 4: COUNTER -->
+  <div class="scene sc4">
+    <div class="counter-wrap">
+      <div class="counter-label-top">БОЛЕЕ</div>
+      <div class="counter-big"><span class="counter-num" id="counterNum">0</span><span class="counter-plus">+</span></div>
+      <div class="counter-label">ТОВАРОВ В НАЛИЧИИ</div>
+      <div class="counter-sub">на сайте stv39.ru</div>
+    </div>
+  </div>
+
+  <!-- Сцена 5: QR -->
+  <div class="scene sc5">
+    <div class="sc-main">НАВЕДИ <span class="or">КАМЕРУ</span></div>
+    <div class="qr-box"><div id="qrCode"></div></div>
+    <div class="sc-sub-big">STV39.RU</div>
+    <div class="sc-sub">Заказывай прямо сейчас</div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <div class="scene-dots"><div class="scene-dot active"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div></div>
+  <button class="restart" onclick="location.reload()">⟳ Перезапустить</button>
+</div>
+
+<script>
+(function(){
+  var W=1920,H=1080;
+  function s(){var sw=window.innerWidth,sh=window.innerHeight,sc=Math.min(sw/W,sh/H),w=document.getElementById('wrap');
+    w.style.transform='scale('+sc+')';w.style.left=Math.round((sw-W*sc)/2)+'px';w.style.top=Math.round((sh-H*sc)/2)+'px';}
+  s();window.addEventListener('resize',s);
+})();
+
+/* Цифровые частицы */
+(function(){
+  var c=document.getElementById('particles');
+  var bits=['0','1','1','0','@'];
+  for(var i=0;i<32;i++){
+    var p=document.createElement('div');
+    var isBit=Math.random()<0.25;
+    if(isBit){
+      p.className='particle bit';
+      p.textContent=bits[Math.floor(Math.random()*bits.length)];
+    } else {
+      var sz=5+Math.random()*9;
+      p.className='particle pixel'+(Math.random()<0.3?' or':'');
+      p.style.width=sz+'px';
+      p.style.height=sz+'px';
+    }
+    p.style.left=Math.random()*100+'%';
+    p.style.animation='floatUp '+(14+Math.random()*16)+'s '+(Math.random()*20)+'s linear infinite';
+    c.appendChild(p);
+  }
+})();
+
+/* Letter-by-letter заголовок сцены 1 */
+(function(){var el=document.getElementById('typed-target'),html=el.innerHTML,parts=html.split('<br>'),word=parts[0].trim(),letters='';
+  for(var i=0;i<word.length;i++) letters+='<span class="letter" style="animation-delay:'+(0.4+i*0.07)+'s">'+word[i]+'</span>';
+  el.innerHTML=letters+'<br><span class="or sc-word-reveal grad-text" style="animation-delay:1.1s">ОНЛАЙН</span>';
+})();
+
+/* Печать запроса в поисковой строке телефона */
+(function(){
+  setTimeout(function(){
+    var el=document.getElementById('typedSearch');
+    var text='холодильник';
+    var i=0;
+    function type(){
+      if(i<=text.length){
+        el.textContent=text.substring(0,i);
+        i++;
+        setTimeout(type, 130);
+      }
+    }
+    type();
+  }, 7500);
+})();
+
+/* Счётчик 0 → 20 000 */
+(function(){
+  setTimeout(function(){
+    var el=document.getElementById('counterNum');
+    var target=20000;
+    var dur=2400;
+    var start=null;
+    function step(ts){
+      if(!start) start=ts;
+      var p=Math.min((ts-start)/dur, 1);
+      var e=1-Math.pow(1-p, 4);
+      el.textContent=Math.round(e*target).toLocaleString('ru-RU');
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }, 31000);
+})();
+
+/* Точки навигации */
+(function(){var times=[0,5000,16000,30000,40000],dots=document.querySelectorAll('.scene-dot');
+  times.forEach(function(t,i){setTimeout(function(){dots.forEach(function(d){d.classList.remove('active')});dots[i].classList.add('active');},t);});
+})();
+
+/* QR-код для scene 5 */
+(function(){
+  function makeQr(){
+    if(typeof QRCode==='undefined'){ setTimeout(makeQr,200); return; }
+    new QRCode(document.getElementById('qrCode'),{
+      text:'https://stv39.ru',
+      width:312, height:312,
+      colorDark:'#1B3073', colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.H
+    });
+  }
+  makeQr();
+})();
+</script>
+</body>
+</html>
