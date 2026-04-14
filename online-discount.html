@@ -213,10 +213,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 /* ═══ МОКАП БРАУЗЕРА (сцена 2) ═══ */
 .sc-browser-wrap { perspective:1200px; margin-bottom:40px; position:relative; }
 .sc-browser {
-  width:680px; height:400px;
+  width:720px; height:420px;
   background:#fff;
   border-radius:14px; position:relative;
   overflow:hidden; transform-style:preserve-3d;
+  display:flex; flex-direction:column;
   box-shadow:
     0 30px 60px rgba(0,0,0,0.5),
     0 0 60px rgba(90,200,255,0.2),
@@ -257,14 +258,15 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .url-cursor { display:inline-block; width:2px; height:22px; background:#333; margin-left:4px; animation:blink 1s infinite; }
 @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
 .browser-content {
-  position:absolute; top:60px; left:0; right:0; bottom:0;
+  position:relative; flex:1;
   background:#fff;
   display:flex; align-items:center; justify-content:center;
-  padding:30px;
+  padding:24px;
   overflow:hidden;
 }
 .mock-grid {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:16px; width:100%; height:100%;
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(2,1fr);
+  gap:14px; width:100%; height:100%;
 }
 .mock-item {
   background:linear-gradient(135deg,#f5f7fc,#e8ecf5);
@@ -326,71 +328,91 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 }
 .sc3-value b { color:var(--or); font-weight:900; }
 
-/* ═══ ЛЕСТНИЦА 5 ступеней ═══ */
+/* ═══ ЛЕСТНИЦА 5 ступеней (цветовая прогрессия холод→жар) ═══ */
 .stair-row {
-  display:flex; gap:14px; align-items:flex-end; justify-content:center;
-  margin-top:50px;
-  height:620px;
+  display:flex; gap:18px; align-items:flex-end; justify-content:center;
+  margin-top:40px;
+  padding-top:90px; /* место для max-label над 5-й ступенью */
   position:relative;
 }
 .stair-step {
-  width:220px;
-  border-radius:14px 14px 0 0;
-  background:linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.04));
-  border:1.5px solid rgba(255,255,255,0.15);
-  border-bottom:none;
+  width:210px;
+  border-radius:14px 14px 10px 10px;
   display:flex; flex-direction:column;
-  align-items:center; justify-content:flex-start;
-  padding:24px 12px 0;
+  align-items:center; justify-content:space-between;
+  padding:22px 12px;
   position:relative;
   transform-origin:bottom center;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.1);
 }
-.stair-step:nth-child(1) { height:200px; }
-.stair-step:nth-child(2) { height:290px; }
-.stair-step:nth-child(3) { height:370px; }
-.stair-step:nth-child(4) { height:470px; }
+/* Прогрессия: холодный синий → тёплый → огонь → золото */
+.stair-step:nth-child(1) {
+  height:200px;
+  background:linear-gradient(180deg, rgba(100,150,240,0.28), rgba(40,70,150,0.6));
+  border:2px solid rgba(130,180,250,0.5);
+  box-shadow:0 10px 24px rgba(30,50,120,0.4), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.stair-step:nth-child(2) {
+  height:280px;
+  background:linear-gradient(180deg, rgba(160,200,255,0.28), rgba(70,110,200,0.65));
+  border:2px solid rgba(170,210,255,0.55);
+  box-shadow:0 12px 28px rgba(40,70,160,0.42), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.stair-step:nth-child(3) {
+  height:350px;
+  background:linear-gradient(180deg, rgba(255,180,100,0.32), rgba(200,100,40,0.68));
+  border:2px solid rgba(255,180,100,0.6);
+  box-shadow:0 14px 32px rgba(150,70,20,0.45), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.stair-step:nth-child(4) {
+  height:430px;
+  background:linear-gradient(180deg, rgba(255,150,80,0.38), rgba(220,80,20,0.78));
+  border:2px solid rgba(255,150,80,0.7);
+  box-shadow:0 16px 36px rgba(180,60,20,0.5), inset 0 1px 0 rgba(255,255,255,0.18);
+}
 .stair-step:nth-child(5) {
-  height:600px;
-  background:linear-gradient(180deg,rgba(232,66,10,0.25),rgba(232,66,10,0.08));
-  border-color:rgba(232,66,10,0.45);
-  border-bottom:none;
+  height:520px;
+  background:linear-gradient(180deg, rgba(255,220,60,0.4), rgba(232,66,10,0.9));
+  border:2px solid rgba(255,215,0,0.85);
+  box-shadow:0 18px 40px rgba(232,66,10,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .stair-step .step-pct {
-  font-weight:900; line-height:1; color:var(--or);
-  background:linear-gradient(90deg,#E8420A,#FFD700,#FF6B2B,#E8420A);
-  background-size:300% 100%;
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-  animation:gradText 3s ease infinite;
+  font-weight:900; line-height:1;
+  color:#fff;
+  text-shadow:0 3px 14px rgba(0,0,0,0.45);
+  margin:0;
 }
-.stair-step:nth-child(1) .step-pct { font-size:70px; }
-.stair-step:nth-child(2) .step-pct { font-size:82px; }
-.stair-step:nth-child(3) .step-pct { font-size:96px; }
-.stair-step:nth-child(4) .step-pct { font-size:112px; }
+.stair-step:nth-child(1) .step-pct { font-size:60px; }
+.stair-step:nth-child(2) .step-pct { font-size:74px; }
+.stair-step:nth-child(3) .step-pct { font-size:90px; }
+.stair-step:nth-child(4) .step-pct { font-size:108px; }
 .stair-step:nth-child(5) .step-pct {
-  font-size:140px;
-  filter:drop-shadow(0 0 25px rgba(255,215,0,0.5));
+  font-size:130px;
+  text-shadow:0 0 35px rgba(255,220,0,0.75), 0 3px 14px rgba(0,0,0,0.5);
 }
 .stair-step .step-sum {
-  margin-top:auto; margin-bottom:20px;
-  font-size:22px; font-weight:600;
-  color:rgba(255,255,255,0.75);
-  text-align:center;
+  font-size:16px; font-weight:600;
+  color:rgba(255,255,255,0.8);
+  text-align:center; line-height:1.25;
+  padding-top:10px;
+  border-top:1.5px solid rgba(255,255,255,0.28);
+  width:86%;
 }
-.stair-step .step-sum b { color:#fff; font-weight:800; font-size:24px; display:block; }
-.stair-step:nth-child(5) .step-sum b { font-size:28px; }
+.stair-step .step-sum b { color:#fff; font-weight:800; font-size:20px; display:block; margin-top:2px; letter-spacing:-0.3px; }
+.stair-step:nth-child(5) .step-sum { border-top-color:rgba(255,230,100,0.6); }
+.stair-step:nth-child(5) .step-sum b { font-size:22px; color:#FFE066; }
 
-/* Максимум — подпись и кольца */
+/* Максимум — лейбл со стрелкой над 5-й ступенью */
 .max-label {
-  position:absolute; top:-70px; left:50%;
+  position:absolute; top:-62px; left:50%;
   transform:translateX(-50%);
-  background:linear-gradient(135deg,#FFD700,#FFA500,#E8420A);
-  color:#fff; padding:14px 28px;
-  border-radius:10px;
-  font-size:22px; font-weight:900; letter-spacing:2px;
+  background:linear-gradient(135deg,#FFE066,#FFA500,#E8420A);
+  color:#fff; padding:11px 20px;
+  border-radius:9px;
+  font-size:17px; font-weight:900; letter-spacing:1.5px;
   white-space:nowrap;
-  box-shadow:0 10px 30px rgba(232,66,10,0.6), 0 0 0 2px rgba(255,255,255,0.3) inset;
-  z-index:2;
+  text-transform:uppercase;
+  box-shadow:0 8px 22px rgba(232,66,10,0.55), 0 0 0 1.5px rgba(255,255,255,0.35) inset;
+  z-index:3;
 }
 .max-label::after {
   content:''; position:absolute; top:100%; left:50%;
@@ -616,8 +638,8 @@ setTimeout(function(){countUp(pcts[4],15)},26700);
     }
     style.textContent=rules;
     document.head.appendChild(style);
-    /* Координаты 5-й ступени: центр экрана, правая часть лестницы */
-    var cx=960+460, cy=540+100;
+    /* Координаты 5-й ступени: центр x ≈1420, y ≈680 (новая лестница) */
+    var cx=1420, cy=680;
     for(var i=0;i<100;i++){
       var c=document.createElement('div');
       var sz=5+Math.random()*11;
