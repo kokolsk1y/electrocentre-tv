@@ -97,6 +97,8 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 
 .sc1 { animation:zoomIn .8s .2s forwards, wipeLeftOut .7s 4.3s forwards; }
 .sc1 .sc1-brand { animation:scIn .5s .3s forwards; }
+.sc1 .sc1-logo  { animation:logoFloat 4s 1s infinite ease-in-out; }
+@keyframes logoFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 .sc1 .sc-main { animation:none; opacity:1; }
 .sc1 .sc-sub  { animation:scIn .5s 1.4s forwards; }
 .sc1 .sc1-site { animation:scIn .5s 1.7s forwards; }
@@ -167,10 +169,10 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .sc-sub-big { font-size:44px; font-weight:800; color:var(--or); margin-top:12px; }
 .sc1 .sc-main { text-shadow:0 0 50px rgba(255,255,255,0.06); }
 
-.sc1-brand { display:flex; align-items:center; gap:24px; margin-bottom:40px; }
-.sc1-accent { width:80px; height:2px; background:linear-gradient(90deg,transparent,var(--or)); }
+.sc1-brand { display:flex; align-items:center; gap:32px; margin-bottom:50px; }
+.sc1-accent { width:100px; height:2px; background:linear-gradient(90deg,transparent,var(--or)); }
 .sc1-accent.right { background:linear-gradient(90deg,var(--or),transparent); }
-.sc1-name { font-size:16px; letter-spacing:10px; font-weight:700; color:rgba(255,255,255,0.45); text-transform:uppercase; padding:8px 20px; border:1px solid rgba(255,255,255,0.12); }
+.sc1-logo { height:70px; width:auto; display:block; filter:drop-shadow(0 0 24px rgba(255,255,255,0.28)) drop-shadow(0 0 40px rgba(232,66,10,0.18)); }
 .sc1-site { margin-top:28px; font-size:22px; font-weight:800; color:var(--or); letter-spacing:3px; }
 
 .grad-text {
@@ -350,14 +352,15 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   perspective:1600px;
 }
 .tier-card {
-  width:390px; height:250px;
+  width:400px; height:280px;
   border-radius:20px;
-  padding:26px 28px;
+  padding:28px 28px 26px;
   position:relative;
   display:flex; flex-direction:column;
   justify-content:space-between;
   transform-style:preserve-3d;
   overflow:hidden;
+  text-align:center;
 }
 .tier-card::before {
   content:''; position:absolute; inset:-30%;
@@ -395,8 +398,9 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   font-weight:900;
   letter-spacing:6px;
   text-transform:uppercase;
-  opacity:0.9;
+  opacity:0.95;
   line-height:1;
+  text-align:center;
 }
 .tier-card.platinum .tier-card-name {
   background:linear-gradient(90deg,#e5e4e2,#ffffff,#b0c4ff,#ffffff,#e5e4e2);
@@ -432,16 +436,24 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   animation:gradText 3s ease infinite;
 }
 .tier-card-cond {
-  font-size:17px;
-  font-weight:500;
-  text-align:right;
-  opacity:0.8;
+  font-size:20px;
+  font-weight:600;
+  text-align:center;
+  opacity:1;
   line-height:1.3;
+  letter-spacing:0.3px;
 }
 .tier-card-cond b {
-  font-size:19px;
+  font-size:24px;
   font-weight:800;
   opacity:1;
+  display:inline;
+}
+.tier-card.platinum .tier-card-cond {
+  text-shadow:0 1px 6px rgba(0,0,0,0.7);
+}
+.tier-card.platinum .tier-card-cond b {
+  color:#FFE066;
 }
 
 .sc-check {
@@ -478,7 +490,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   <div class="scene sc1">
     <div class="sc1-brand">
       <div class="sc1-accent"></div>
-      <div class="sc1-name">ЭЛЕКТРОЦЕНТР</div>
+      <img src="logotip-light.png" alt="ЭлектроЦентр" class="sc1-logo">
       <div class="sc1-accent right"></div>
     </div>
     <div class="sc-main" id="typed-target">ЭКОНОМЬТЕ<br><span class="or">НА КАЖДОЙ ПОКУПКЕ</span></div>
