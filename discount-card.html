@@ -136,7 +136,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .sc5 .sc-main { animation:scIn .6s 34.3s forwards; }
 .sc5 .tier-card.silver   { animation:tierFlipIn .8s 35.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 .sc5 .tier-card.gold     { animation:tierFlipIn .8s 37.0s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-.sc5 .tier-card.platinum { animation:tierFlipIn .8s 38.5s cubic-bezier(0.34,1.56,0.64,1) forwards, platinumPulse 2.8s 40.5s infinite ease-in-out; }
+.sc5 .tier-card.platinum { animation:tierFlipIn .8s 38.5s cubic-bezier(0.34,1.56,0.64,1) forwards, platinumPulse 2.8s 38.5s infinite ease-in-out; }
 @keyframes tierFlipIn {
   0%  { opacity:0; transform:rotateY(60deg) translateY(40px) scale(0.8); }
   100%{ opacity:1; transform:rotateY(0deg) translateY(0) scale(1); }
@@ -618,35 +618,40 @@ setTimeout(function(){countUp(pcts[0],6)},24800);
 setTimeout(function(){countUp(pcts[1],8)},27000);
 setTimeout(function(){countUp(pcts[2],10)},29200);
 
-/* 7. Конфетти с гравитацией */
+/* 7. Конфетти с гравитацией (САЛЮТ) */
 (function(){
   setTimeout(function(){
     var wrap=document.getElementById('wrap');
-    var colors=['#E8420A','#FF6B2B','#fff','#FFD700','#FFA500','#2548AE'];
+    var colors=['#E8420A','#FF6B2B','#fff','#FFD700','#FFA500','#4CD964','#82F0A0','#2548AE'];
     var style=document.createElement('style');
     var rules='';
-    for(var i=0;i<80;i++){
-      var dx=(Math.random()-0.5)*1200;
-      var peakY=-(200+Math.random()*350);
-      var finalY=300+Math.random()*300;
-      var rot=Math.random()*900-450;
+    var N=140;
+    for(var i=0;i<N;i++){
+      var dx=(Math.random()-0.5)*1500;
+      var peakY=-(250+Math.random()*450);
+      var finalY=350+Math.random()*400;
+      var rot=Math.random()*1200-600;
       rules+='@keyframes cf'+i+'{'+
         '0%{transform:translate(0,0) rotate(0deg) scale(0);opacity:1}'+
-        '25%{transform:translate('+dx*0.3+'px,'+peakY+'px) rotate('+rot*0.3+'deg) scale(1);opacity:1}'+
-        '70%{opacity:.7}'+
-        '100%{transform:translate('+dx+'px,'+finalY+'px) rotate('+rot+'deg) scale(.4);opacity:0}}';
+        '20%{transform:translate('+dx*0.25+'px,'+peakY+'px) rotate('+rot*0.3+'deg) scale(1.1);opacity:1}'+
+        '70%{opacity:.8}'+
+        '100%{transform:translate('+dx+'px,'+finalY+'px) rotate('+rot+'deg) scale(.3);opacity:0}}';
     }
     style.textContent=rules;
     document.head.appendChild(style);
-    for(var i=0;i<80;i++){
+    /* Двойной взрыв: от иконки карты + сверху от заголовка */
+    var bursts=[{x:960,y:400},{x:960,y:520}];
+    for(var i=0;i<N;i++){
       var c=document.createElement('div');
-      var sz=4+Math.random()*10;
-      var dur=2+Math.random()*1.5;
+      var sz=5+Math.random()*12;
+      var dur=2.2+Math.random()*1.8;
+      var burst=bursts[i%2];
       c.style.cssText=
-        'position:absolute;left:960px;top:420px;width:'+sz+'px;height:'+(Math.random()>0.4?sz:sz*2.5)+'px;'+
+        'position:absolute;left:'+burst.x+'px;top:'+burst.y+'px;width:'+sz+'px;height:'+(Math.random()>0.4?sz:sz*2.8)+'px;'+
         'background:'+colors[Math.floor(Math.random()*colors.length)]+';'+
         'border-radius:'+(Math.random()>0.5?'50%':'2px')+';'+
         'pointer-events:none;z-index:5;'+
+        'box-shadow:0 0 8px rgba(255,255,255,0.3);'+
         'animation:cf'+i+' '+dur+'s cubic-bezier(0.25,0.46,0.45,0.94) forwards;';
       wrap.appendChild(c);
     }
