@@ -97,6 +97,8 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 
 .sc1 { animation:zoomIn .8s .2s forwards, wipeLeftOut .7s 4.3s forwards; }
 .sc1 .sc1-brand { animation:scIn .5s .3s forwards; }
+.sc1 .sc1-logo-card { animation:logoFloat 4s 1s infinite ease-in-out; }
+@keyframes logoFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
 .sc1 .sc-main { animation:none; opacity:1; }
 .sc1 .sc-sub  { animation:scIn .5s 1.4s forwards; }
 .sc1 .sc1-site { animation:scIn .5s 1.7s forwards; }
@@ -167,10 +169,19 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .sc-sub-big { font-size:44px; font-weight:800; color:var(--or); margin-top:12px; }
 .sc1 .sc-main { text-shadow:0 0 50px rgba(255,255,255,0.06); }
 
-.sc1-brand { display:flex; align-items:center; gap:24px; margin-bottom:40px; }
-.sc1-accent { width:80px; height:2px; background:linear-gradient(90deg,transparent,var(--or)); }
+.sc1-brand { display:flex; align-items:center; gap:28px; margin-bottom:50px; }
+.sc1-accent { width:90px; height:2px; background:linear-gradient(90deg,transparent,var(--or)); }
 .sc1-accent.right { background:linear-gradient(90deg,var(--or),transparent); }
-.sc1-name { font-size:16px; letter-spacing:10px; font-weight:700; color:rgba(255,255,255,0.45); text-transform:uppercase; padding:8px 20px; border:1px solid rgba(255,255,255,0.12); }
+.sc1-logo-card {
+  background:#fff;
+  border-radius:14px;
+  padding:14px 28px;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.4),
+    0 0 60px rgba(255,255,255,0.08),
+    0 0 90px rgba(232,66,10,0.18);
+}
+.sc1-logo-card img { height:60px; width:auto; display:block; }
 .sc1-site { margin-top:28px; font-size:22px; font-weight:800; color:var(--or); letter-spacing:3px; }
 
 .grad-text {
@@ -327,7 +338,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .tier-item:nth-child(2) .tier-pct { font-size:115px; }
 .tier-item:nth-child(3) .tier-pct { font-size:130px; filter:drop-shadow(0 0 20px rgba(232,66,10,0.3)); }
 .tier-cond { font-size:30px; color:rgba(255,255,255,0.8); margin-top:22px; text-align:center; line-height:1.45; font-weight:500; position:relative; z-index:1; }
-.tier-cond b { color:#fff; font-weight:800; font-size:34px; }
+.tier-cond b { color:#fff; font-weight:800; font-size:34px; white-space:nowrap; }
 .tier-bar { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top,rgba(232,66,10,0.12),rgba(232,66,10,0.02)); transform-origin:bottom; transform:scaleY(0); z-index:0; }
 .tier-item:nth-child(1) .tier-bar { height:35%; }
 .tier-item:nth-child(2) .tier-bar { height:60%; }
@@ -488,7 +499,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   <div class="scene sc1">
     <div class="sc1-brand">
       <div class="sc1-accent"></div>
-      <div class="sc1-name">ЭЛЕКТРОЦЕНТР</div>
+      <div class="sc1-logo-card"><img src="logotip-hd.png" alt="ЭлектроЦентр"></div>
       <div class="sc1-accent right"></div>
     </div>
     <div class="sc-main" id="typed-target">ЭКОНОМЬТЕ<br><span class="or">НА КАЖДОЙ ПОКУПКЕ</span></div>
