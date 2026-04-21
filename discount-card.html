@@ -67,7 +67,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 }
 
 .progress-bar { position:absolute; bottom:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.08); z-index:10; }
-.progress-fill { height:100%; width:0; background:linear-gradient(90deg,var(--or),var(--or2)); animation:progFill 41s linear forwards; }
+.progress-fill { height:100%; width:0; background:linear-gradient(90deg,var(--or),var(--or2)); animation:progFill 52s linear forwards; }
 @keyframes progFill { to{width:100%} }
 .scene-dots { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:10; }
 .scene-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.15); transition:all .5s; }
@@ -81,7 +81,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 }
 .scene .sc-main, .scene .sc-sub, .scene .sc-sub-big,
 .scene .sc-card-vis, .scene .sc-check,
-.scene .sc-step, .scene .sc-line, .scene .sc3-card, .scene .tier-item,
+.scene .sc-step, .scene .sc-line, .scene .sc3-card, .scene .tier-item, .scene .tier-card,
 .scene .sc1-brand, .scene .sc1-site { opacity:0; }
 
 @keyframes scIn  { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
@@ -129,11 +129,36 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
 .sc4 .tier-item:nth-child(2) .tier-bar { animation:barGrow .8s 27.5s forwards; }
 .sc4 .tier-item:nth-child(3) .tier-bar { animation:barGrow .8s 29.7s forwards; }
 
-.sc5 { animation:irisIn .7s 34.0s forwards, zoomOut .5s 39.5s forwards; }
-.sc5 .sc-check   { animation:scPop .4s 34.2s forwards, ctaPulse 1.5s 34.8s infinite; }
-.sc5 .sc-main    { animation:scIn .4s 34.5s forwards; }
-.sc5 .sc-sub-big { animation:scIn .4s 34.8s forwards; }
-.sc5 .sc-sub     { animation:scIn .4s 35.1s forwards; }
+/* Scene 5: ТРИ УРОВНЯ КАРТ (34→44.6s) */
+.sc5 { animation:irisIn .7s 34.0s forwards, zoomOut .6s 44.0s forwards; }
+.sc5 .sc-main { animation:scIn .6s 34.3s forwards; }
+.sc5 .tier-card.silver   { animation:tierFlipIn .8s 35.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc5 .tier-card.gold     { animation:tierFlipIn .8s 37.0s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc5 .tier-card.platinum { animation:tierFlipIn .8s 38.5s cubic-bezier(0.34,1.56,0.64,1) forwards, platinumPulse 2.8s 40.5s infinite ease-in-out; }
+@keyframes tierFlipIn {
+  0%  { opacity:0; transform:rotateY(60deg) translateY(40px) scale(0.8); }
+  100%{ opacity:1; transform:rotateY(0deg) translateY(0) scale(1); }
+}
+@keyframes platinumPulse {
+  0%,100% { box-shadow:
+    0 22px 50px rgba(0,0,0,0.55),
+    0 0 70px rgba(90,200,255,0.35),
+    0 0 120px rgba(155,100,255,0.22),
+    0 0 0 1px rgba(255,255,255,0.2) inset;
+  }
+  50%     { box-shadow:
+    0 22px 50px rgba(0,0,0,0.55),
+    0 0 110px rgba(90,200,255,0.65),
+    0 0 200px rgba(155,100,255,0.45),
+    0 0 0 1px rgba(255,255,255,0.4) inset;
+  }
+}
+
+/* Scene 6: CTA «Оформите у оператора» (44.6→51s) */
+.sc6 { animation:zoomIn .7s 44.6s forwards, zoomOut .5s 50.5s forwards; }
+.sc6 .sc-check   { animation:scPop .4s 44.9s forwards, ctaPulse 1.5s 45.5s infinite; }
+.sc6 .sc-main    { animation:scIn .4s 45.2s forwards; }
+.sc6 .sc-sub-big { animation:scIn .4s 45.5s forwards; }
 
 /* ═══ Типографика ═══ */
 .sc-main { font-size:64px; font-weight:900; color:var(--wh); line-height:1.15; letter-spacing:-1px; }
@@ -317,6 +342,108 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   75%{box-shadow:-4px 0 25px rgba(232,66,10,0.35),inset 0 0 20px rgba(232,66,10,0.05)}
 }
 
+/* ═══ ТРИ УРОВНЯ КАРТ — серебро / золото / платина ═══ */
+.tier-cards-row {
+  display:flex; gap:36px;
+  justify-content:center;
+  margin-top:50px;
+  perspective:1600px;
+}
+.tier-card {
+  width:390px; height:250px;
+  border-radius:20px;
+  padding:26px 28px;
+  position:relative;
+  display:flex; flex-direction:column;
+  justify-content:space-between;
+  transform-style:preserve-3d;
+  overflow:hidden;
+}
+.tier-card::before {
+  content:''; position:absolute; inset:-30%;
+  background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%);
+  transform:translateX(-100%);
+  animation:cardShimmer 4.5s 40s infinite ease-in-out;
+  pointer-events:none; z-index:2;
+}
+@keyframes cardShimmer {
+  0%,40% { transform:translateX(-100%); }
+  100%   { transform:translateX(100%); }
+}
+.tier-card.silver {
+  background:linear-gradient(135deg, #f5f5f5, #b8b8b8 30%, #dcdcdc 50%, #9a9a9a 70%, #e8e8e8);
+  color:#1a1a1a;
+  box-shadow:
+    0 20px 42px rgba(0,0,0,0.4),
+    0 0 55px rgba(200,200,200,0.28),
+    0 0 0 1px rgba(255,255,255,0.4) inset;
+}
+.tier-card.gold {
+  background:linear-gradient(135deg, #ffe28a, #c79818 30%, #f4cc3e 50%, #9d7e1c 70%, #ffd86b);
+  color:#3a2400;
+  box-shadow:
+    0 20px 42px rgba(0,0,0,0.42),
+    0 0 65px rgba(255,185,40,0.4),
+    0 0 0 1px rgba(255,255,255,0.35) inset;
+}
+.tier-card.platinum {
+  background:linear-gradient(135deg, #3a4058, #141828 35%, #232944 55%, #0d0f1a 75%, #3a4058);
+  color:#fff;
+}
+.tier-card-name {
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:6px;
+  text-transform:uppercase;
+  opacity:0.9;
+  line-height:1;
+}
+.tier-card.platinum .tier-card-name {
+  background:linear-gradient(90deg,#e5e4e2,#ffffff,#b0c4ff,#ffffff,#e5e4e2);
+  background-size:200% 100%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  animation:gradText 4s ease infinite;
+  opacity:1;
+}
+.tier-card-pct {
+  font-size:26px;
+  font-weight:600;
+  text-align:center;
+  line-height:1;
+  align-self:center;
+  opacity:0.75;
+}
+.tier-card-pct b {
+  display:block;
+  font-size:96px;
+  font-weight:900;
+  line-height:1;
+  margin-top:4px;
+  letter-spacing:-3px;
+  opacity:1;
+}
+.tier-card.gold .tier-card-pct b {
+  text-shadow:0 0 25px rgba(255,215,0,0.45);
+}
+.tier-card.platinum .tier-card-pct b {
+  background:linear-gradient(90deg,#e5e4e2,#ffffff,#b0c4ff,#ffffff,#e5e4e2);
+  background-size:200% 100%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  animation:gradText 3s ease infinite;
+}
+.tier-card-cond {
+  font-size:17px;
+  font-weight:500;
+  text-align:right;
+  opacity:0.8;
+  line-height:1.3;
+}
+.tier-card-cond b {
+  font-size:19px;
+  font-weight:800;
+  opacity:1;
+}
+
 .sc-check {
   width:110px; height:110px; border-radius:50%; background:var(--or);
   display:flex; align-items:center; justify-content:center;
@@ -327,7 +454,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
   0%,100%{box-shadow:0 0 0 0 rgba(232,66,10,0.5),0 4px 24px rgba(232,66,10,0.3)}
   50%{box-shadow:0 0 0 24px rgba(232,66,10,0),0 4px 24px rgba(232,66,10,0.3)}
 }
-.sc5 .sc-main { text-shadow:0 0 30px rgba(255,255,255,0.1); }
+.sc6 .sc-main { text-shadow:0 0 30px rgba(255,255,255,0.1); }
 
 .restart {
   position:absolute; bottom:24px; right:24px; z-index:20; padding:10px 24px;
@@ -367,7 +494,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
       </div>
     </div>
     <div class="sc-main">КАРТА<br><span class="or">ПОСТОЯННОГО КЛИЕНТА</span></div>
-    <div class="sc-sub">Скидка на весь ассортимент магазина</div>
   </div>
 
   <!-- Сцена 3: 3D-карточки -->
@@ -405,16 +531,37 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; margin:0;
     </div>
   </div>
 
-  <!-- Сцена 5 -->
+  <!-- Сцена 5: Три уровня карт -->
   <div class="scene sc5">
+    <div class="sc-main">ТРИ УРОВНЯ <span class="or">КАРТ</span></div>
+    <div class="tier-cards-row">
+      <div class="tier-card silver">
+        <div class="tier-card-name">СЕРЕБРО</div>
+        <div class="tier-card-pct">от <b>8%</b></div>
+        <div class="tier-card-cond">от <b>200 000 ₽</b> в год</div>
+      </div>
+      <div class="tier-card gold">
+        <div class="tier-card-name">ЗОЛОТО</div>
+        <div class="tier-card-pct">от <b>10%</b></div>
+        <div class="tier-card-cond">от <b>600 000 ₽</b> в год</div>
+      </div>
+      <div class="tier-card platinum">
+        <div class="tier-card-name">ПЛАТИНА</div>
+        <div class="tier-card-pct">от <b>15%</b></div>
+        <div class="tier-card-cond">от <b>6 000 000 ₽</b> в год</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Сцена 6: CTA -->
+  <div class="scene sc6">
     <div class="sc-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <div class="sc-main">ОФОРМИТЕ У ОПЕРАТОРА</div>
     <div class="sc-sub-big">Это бесплатно!</div>
-    <div class="sc-sub">Спросите у любого оператора</div>
   </div>
 
   <div class="progress-bar"><div class="progress-fill"></div></div>
-  <div class="scene-dots"><div class="scene-dot active"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div></div>
+  <div class="scene-dots"><div class="scene-dot active"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div><div class="scene-dot"></div></div>
   <button class="restart" onclick="location.reload()">⟳ Перезапустить</button>
 </div>
 
@@ -481,11 +628,11 @@ setTimeout(function(){countUp(pcts[2],10)},29200);
         'animation:cf'+i+' '+dur+'s cubic-bezier(0.25,0.46,0.45,0.94) forwards;';
       wrap.appendChild(c);
     }
-  },34300);
+  },44900);
 })();
 
 /* Точки */
-(function(){var times=[0,5000,12000,23000,34000],dots=document.querySelectorAll('.scene-dot');
+(function(){var times=[0,5000,12000,23000,34000,44600],dots=document.querySelectorAll('.scene-dot');
   times.forEach(function(t,i){setTimeout(function(){dots.forEach(function(d){d.classList.remove('active')});dots[i].classList.add('active');},t);});
 })();
 </script>
