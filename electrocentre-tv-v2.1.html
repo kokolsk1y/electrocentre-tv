@@ -469,7 +469,11 @@ html, body {
 .s-card .tier-card-cond { font-size:20px; font-weight:600; text-align:center; opacity:1; line-height:1.3; letter-spacing:0.3px; }
 .s-card .tier-card-cond b { font-size:24px; font-weight:800; opacity:1; display:inline; }
 .s-card .tier-card.platinum .tier-card-cond { text-shadow:0 1px 6px rgba(0,0,0,0.7); }
-.s-card .tier-card.platinum .tier-card-cond b { color:#FFE066; }
+.s-card .tier-card.platinum .tier-card-cond b {
+  background:linear-gradient(90deg,#e5e4e2,#ffffff,#b0c4ff,#ffffff,#e5e4e2); background-size:200% 100%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.s-card.active .tier-card.platinum .tier-card-cond b { animation:gradText 3s ease infinite; }
 .s-card .sc-check {
   width:120px; height:120px; border-radius:50%; background:var(--or);
   display:flex; align-items:center; justify-content:center;
