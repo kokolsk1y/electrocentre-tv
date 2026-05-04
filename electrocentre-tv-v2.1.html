@@ -867,23 +867,23 @@ function tick(){
 tick(); setInterval(tick,1000);
 
 // ── Авто-удаление просроченных слайдов (data-show-until="YYYY-MM-DD") ──
+// Слайд крутится весь день указанной даты; убирается после 18:00 этого дня.
+function _showUntilCutoff(s){ return new Date(s + 'T18:00:00'); }
 (function pruneExpired(){
-  const today = new Date(); today.setHours(0,0,0,0);
+  const now = new Date();
   document.querySelectorAll('.slide[data-show-until]').forEach(el=>{
-    const until = new Date(el.dataset.showUntil + 'T00:00:00');
-    if (today > until) el.remove();
+    if (now > _showUntilCutoff(el.dataset.showUntil)) el.remove();
   });
 })();
-// каждые 30 минут проверять и при необходимости перезагрузить страницу
+// каждые 5 минут проверять и при необходимости перезагрузить страницу
 setInterval(function(){
-  const today = new Date(); today.setHours(0,0,0,0);
+  const now = new Date();
   let expired = false;
   document.querySelectorAll('.slide[data-show-until]').forEach(el=>{
-    const until = new Date(el.dataset.showUntil + 'T00:00:00');
-    if (today > until) expired = true;
+    if (now > _showUntilCutoff(el.dataset.showUntil)) expired = true;
   });
   if (expired) location.reload();
-}, 30*60*1000);
+}, 5*60*1000);
 
 // ── Slides ──
 const slides = document.querySelectorAll('.slide');
