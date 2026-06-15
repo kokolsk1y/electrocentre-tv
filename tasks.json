@@ -154,6 +154,20 @@
       "status": "pending",
       "approved": false,
       "created": "2026-03-23 15:00"
+    },
+    {
+      "id": 37,
+      "text": "Баннеры: подготовить в правильном формате 1920x1080 без чёрных полос (letter/pillarbox). Текущие баннеры не заполняют весь экран — нужны оригиналы или ресайз с crop под 16:9.",
+      "status": "pending",
+      "approved": true,
+      "created": "2026-03-23 22:45"
+    },
+    {
+      "id": 38,
+      "text": "Видео-блок: 7 серий сжаты (1420 МБ → 197 МБ, H.264 1080p30 CRF23 +faststart) в videos/seriya-1..7.mp4, встроены в v2.1 после баннеров, бессрочно, muted-autoplay, переход по onended",
+      "status": "done",
+      "approved": true,
+      "created": "2026-06-15 14:15"
     }
   ]
 }
