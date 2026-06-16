@@ -678,8 +678,8 @@ html, body {
     <img src="slides/01.06-30.06.26/942-lampa-0626.webp?v=jun2026" alt="Лампа в подарок к уличному светильнику IEK">
   </div>
 
-  <!-- ВИДЕО 1/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-1.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 1/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-1.mp4"></div>
 
   <!-- СЛАЙД 3: БАННЕР — поступление клемм · до 18.06.2026 -->
   <div class="slide banner" id="s12" data-duration="10000" data-show-until="2026-06-18">
@@ -705,8 +705,8 @@ html, body {
     <img src="slides/01.06-30.06.26/942-izolentu-0626.webp?v=jun2026" alt="Дарим изоленту к НШВИ №5 и №10">
   </div>
 
-  <!-- ВИДЕО 2/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-2.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 2/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-2.mp4"></div>
 
   <!-- СЛАЙД 6: БАННЕР — День России 12 июня · до 12.06.2026 -->
   <div class="slide banner" id="s13" data-duration="10000" data-show-until="2026-06-12">
@@ -804,8 +804,8 @@ html, body {
     <img src="slides/01.06-30.06.26/942-gayka-0626.webp?v=jun2026" alt="Гайка в подарок к УШМ DCK">
   </div>
 
-  <!-- ВИДЕО 3/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-3.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 3/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-3.mp4"></div>
 
   <!-- СЛАЙД 9: БАННЕР — поступление силовых разъёмов · до 18.06.2026 -->
   <div class="slide banner" id="s14" data-duration="10000" data-show-until="2026-06-18">
@@ -835,16 +835,16 @@ html, body {
     <img src="slides/01.06-30.06.26/942-udlinitel-0626.webp?v=jun2026" alt="Дарим удлинитель к изделиям AWSproducts от 5000 ₽">
   </div>
 
-  <!-- ВИДЕО 4/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-4.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 4/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-4.mp4"></div>
 
   <!-- СЛАЙД 12: БАННЕР — поступление хомутов LSON · до 18.06.2026 -->
   <div class="slide banner" id="s15" data-duration="10000" data-show-until="2026-06-18">
     <img src="slides/01.06-30.06.26/942-khomuty.webp?v=jun2026" alt="Большое поступление хомутов LSON">
   </div>
 
-  <!-- ВИДЕО 5/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-5.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 5/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-5.mp4"></div>
 
   <!-- СЛАЙД 13: БАННЕР — 9-10 мая выходные · крутится до 08.05.2026 включительно -->
   <div class="slide banner" id="s9" data-duration="10000" data-show-until="2026-05-08">
@@ -856,8 +856,8 @@ html, body {
     <img src="slides/01.06-30.06.26/942-termostat-0626.webp?v=jun2026" alt="Дарим термостат к вентилятору и обогревателю для щита">
   </div>
 
-  <!-- ВИДЕО 6/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-6.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 6/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-6.mp4"></div>
 
   <!-- СЛАЙД 15: БАННЕР — поступление розеток, выключателей, рамок · до 18.06.2026 -->
   <div class="slide banner" id="s16" data-duration="10000" data-show-until="2026-06-18">
@@ -869,8 +869,8 @@ html, body {
     <img src="slides/01.06-30.06.26/942-khomuty-online-0626.webp?v=jun2026" alt="Упаковка хомутов в подарок при заказе на stv39.ru от 500 ₽">
   </div>
 
-  <!-- ВИДЕО 7/7 · бессрочно · переход по onended -->
-  <div class="slide vid"><video src="videos/seriya-7.mp4" muted playsinline preload="none"></video></div>
+  <!-- ВИДЕО 7/7 · бессрочно · переход по onended · общий плеер по data-src -->
+  <div class="slide vid" data-src="videos/seriya-7.mp4"></div>
 
 </div><!-- /stage -->
 
@@ -931,6 +931,13 @@ setInterval(function(){
 // ── Slides ──
 const slides = document.querySelectorAll('.slide');
 let cur = 0, timer;
+
+// ── Один общий видео-плеер на все ролики (Smart TV держит мало декодеров) ──
+// src ставится по data-src активного .vid-слайда; элемент переносится в активный слайд.
+const tvVideo = document.createElement('video');
+tvVideo.muted = true; tvVideo.setAttribute('muted','');
+tvVideo.playsInline = true; tvVideo.setAttribute('playsinline','');
+tvVideo.preload = 'auto';
 
 // Build dots
 (function(){
@@ -1085,9 +1092,14 @@ function goTo(idx){
   const prevEl = slides[cur];
   if (prevEl.classList.contains('s-card')) stopCardAnim(prevEl);
   resetItems(prevEl);
-  // остановить видео уходящего слайда
-  const prevVid = prevEl.querySelector('video');
-  if (prevVid){ prevVid.pause(); prevVid.onended = null; prevVid.ontimeupdate = null; prevVid.onerror = null; }
+  // освободить общий плеер при уходе с видео-слайда (важно для Smart TV)
+  if (prevEl.classList.contains('vid') && prevEl.contains(tvVideo)){
+    tvVideo.pause();
+    tvVideo.onended = tvVideo.onerror = tvVideo.onplaying = null;
+    tvVideo.removeAttribute('src');
+    try { tvVideo.load(); } catch(e){}            // освобождает аппаратный декодер
+    if (tvVideo.parentNode) tvVideo.parentNode.removeChild(tvVideo);
+  }
   prevEl.classList.remove('on');
   cur = ((idx % slides.length) + slides.length) % slides.length;
   const nextEl = slides[cur];
@@ -1102,20 +1114,31 @@ function startProg(){
   clearInterval(timer);
   const fill = document.getElementById('progFill');
 
-  // ── Видео-слайд: длительность = ролик, переход по onended ──
-  const vid = slides[cur].querySelector('video');
-  if (vid){
-    fill.style.transition = 'width 0.25s linear';
+  // ── Видео-слайд: один общий плеер, переход по onended ──
+  const vslide = slides[cur];
+  if (vslide.classList.contains('vid')){
+    fill.style.transition = 'width 0.2s linear';
     fill.style.width = '0%';
-    vid.muted = true;                 // гарантия автоплея на TV
-    try { vid.currentTime = 0; } catch(e){}
-    vid.onended = ()=>{ goTo(cur+1); };
-    vid.ontimeupdate = ()=>{ if(vid.duration) fill.style.width = (vid.currentTime/vid.duration*100)+'%'; };
-    // если ролик не загрузился/не проигрался — не зависаем, идём дальше через 60с
-    timer = setTimeout(()=>goTo(cur+1), 60000);
-    vid.onerror = ()=>{ clearTimeout(timer); goTo(cur+1); };
-    const p = vid.play();
-    if (p && p.catch) p.catch(()=>{}); // muted-autoplay обычно проходит; fallback уже стоит
+    tvVideo.muted = true;
+    tvVideo.onended  = ()=>{ goTo(cur+1); };
+    tvVideo.onerror  = ()=>{ goTo(cur+1); };            // битый/неподдерживаемый ролик — сразу дальше
+    tvVideo.onplaying= ()=>{ vslide.dataset.started = '1'; };
+    delete vslide.dataset.started;
+    tvVideo.src = vslide.dataset.src;
+    vslide.appendChild(tvVideo);
+    const p = tvVideo.play();
+    if (p && p.catch) p.catch(()=>{});                  // muted-autoplay обычно проходит
+    // Прогресс-бар + страховка от зависания: бар не замирает, сбой — пропуск за 8 с
+    let waited = 0;
+    timer = setInterval(()=>{
+      waited += 200;
+      if (tvVideo.currentTime > 0 && tvVideo.duration){
+        fill.style.width = Math.min(tvVideo.currentTime / tvVideo.duration * 100, 100) + '%';
+      } else {
+        fill.style.width = Math.min(waited / 12000 * 100, 100) + '%';   // индикатор загрузки
+        if (!vslide.dataset.started && waited >= 8000){ goTo(cur+1); }   // не стартовал — пропуск
+      }
+    }, 200);
     return;
   }
 
