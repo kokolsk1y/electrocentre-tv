@@ -630,6 +630,103 @@ html, body {
 .sdot { height:3px; border-radius:2px; background:rgba(27,48,115,0.15); transition:all .4s; width:18px; cursor:pointer; }
 .sdot.on { background:var(--blue); width:28px; }
 .bot-info { font-size:12px; font-weight:600; color:rgba(27,48,115,0.35); letter-spacing:0.5px; flex-shrink:0; }
+
+/* ══ SLIDE: БОНУСНАЯ КАРТА (анимация · продолжение карты скидок) ══ */
+/* Оптимизировано для слабых TV: статичный фон (без перерисовки),
+   анимации — только transform/opacity (GPU), без animate box-shadow. */
+.s-bonus{
+  padding:0 !important; overflow:hidden;
+  background:linear-gradient(150deg,#12204f 0%,#0c1740 55%,#0f1d49 100%);
+  align-items:stretch !important; justify-content:flex-start !important;
+}
+.s-bonus .bg-sym{ position:absolute; font-size:420px; font-weight:900; color:transparent; -webkit-text-stroke:1px rgba(255,255,255,0.03); top:50%; left:50%; pointer-events:none; white-space:nowrap; transform:translate(-50%,-50%); }
+.s-bonus .vignette{ position:absolute; inset:0; z-index:2; pointer-events:none; background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.5) 100%); }
+.s-bonus .light-sweep{ position:absolute; inset:0; z-index:2; pointer-events:none; background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.035) 44%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.035) 56%, transparent 62%); transform:translateX(-120%); }
+.s-bonus.active .light-sweep{ animation:lightSweep 7s 1.5s infinite ease-in-out; }
+.s-bonus .particles{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+.s-bonus .particle{ position:absolute; border-radius:50%; background:rgba(255,255,255,0.07); bottom:-20px; }
+.s-bonus.active .particle{ animation:floatUp var(--p-dur,20s) var(--p-delay,0s) linear infinite; }
+
+.s-bonus .scene{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:60px 80px; opacity:0; z-index:1; }
+.s-bonus .scene .sc-main, .s-bonus .scene .sc-sub-big, .s-bonus .scene .b-card-wrap,
+.s-bonus .scene .b-accum, .s-bonus .scene .b-logo, .s-bonus .scene .b-counter,
+.s-bonus .scene .b-kassa { opacity:0; }
+.s-bonus .sc-main{ font-size:62px; font-weight:900; color:var(--wh); line-height:1.16; letter-spacing:-1px; max-width:1560px; text-shadow:0 2px 16px rgba(0,0,0,0.45); }
+.s-bonus .sc-main .or{ color:var(--or); }
+.s-bonus .sc-sub-big{ font-size:44px; font-weight:800; color:rgba(255,255,255,0.82); margin-top:20px; letter-spacing:2px; }
+.s-bonus .sc-sub-big .or{ color:var(--or); }
+.s-bonus .grad-text{ background:linear-gradient(90deg,#E8420A,#FFD700,#FF6B2B,#E8420A); background-size:300% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── flip-карта (лицо ↔ оборот) ── */
+.s-bonus .b-card-wrap{ position:relative; width:580px; height:390px; margin:0 auto 46px; perspective:1600px; }
+.s-bonus .b-card{ position:absolute; inset:0; transform-style:preserve-3d; }
+/* переворот только в свою сцену (за кадром карта статична — легче для TV) */
+.s-bonus.active .sc1 .b-card{ animation:bonusFlip 5.6s .8s ease-in-out forwards; }
+.s-bonus.active .sc6 .b-card{ animation:bonusFlip 5.2s 35.2s ease-in-out forwards; }
+.s-bonus .b-face{ position:absolute; inset:0; border-radius:18px; backface-visibility:hidden; -webkit-backface-visibility:hidden; background-size:cover; background-position:center; box-shadow:0 28px 60px rgba(0,0,0,0.55),0 0 50px rgba(255,255,255,0.1),0 0 120px rgba(232,66,10,0.25); }
+.s-bonus .b-front{ background-image:url('bonus-card-front.webp'); }
+.s-bonus .b-back{ background-color:#fff; background-image:url('bonus-card-back.webp'); transform:rotateY(180deg); }
+.s-bonus .b-shine{ position:absolute; inset:0; border-radius:18px; overflow:hidden; pointer-events:none; z-index:5; }
+.s-bonus .b-shine::before{ content:''; position:absolute; inset:-25%; background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,0.5) 46%,rgba(255,220,180,0.2) 50%,transparent 62%); transform:translateX(-130%); }
+.s-bonus.active .sc1 .b-shine::before{ animation:shimmer 2.6s 1.2s 2 ease-in-out; }
+.s-bonus.active .sc6 .b-shine::before{ animation:shimmer 2.6s 35.4s 2 ease-in-out; }
+@keyframes bonusFlip{ 0%{transform:rotateY(0deg)} 42%{transform:rotateY(180deg)} 58%{transform:rotateY(180deg)} 100%{transform:rotateY(360deg)} }
+
+/* ── сцена 2: проценты падают в ёмкость ── */
+.s-bonus .b-accum{ display:flex; align-items:center; justify-content:center; gap:104px; margin-bottom:50px; height:340px; }
+.s-bonus .b-purchase{ display:flex; flex-direction:column; align-items:center; gap:18px; }
+.s-bonus .b-purchase svg{ width:124px; height:124px; }
+.s-bonus .b-purchase span{ font-size:26px; font-weight:700; color:rgba(255,255,255,0.82); }
+.s-bonus .b-drop-zone{ position:relative; width:320px; height:340px; }
+.s-bonus .pct-chip{ position:absolute; left:50%; top:0; font-size:46px; font-weight:900; color:var(--or-soft,#ff6a2c); text-shadow:0 0 20px rgba(232,66,10,0.6); opacity:0; }
+.s-bonus.active .sc2 .pct-chip{ animation:bonusDrop 2.6s infinite ease-in; }
+.s-bonus .b-card-icon{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:300px; height:190px; border:3px solid #fff; border-radius:16px; overflow:hidden; background:rgba(255,255,255,0.05); box-shadow:0 12px 38px rgba(0,0,0,0.4); }
+.s-bonus .b-card-fill{ position:absolute; left:0; right:0; bottom:0; height:82%; transform:scaleY(0); transform-origin:bottom; background:linear-gradient(180deg,#ff8a45,#E8420A); }
+.s-bonus.active .sc2 .b-card-fill{ animation:cardFill 4.6s 8.2s forwards; }
+@keyframes cardFill{ 0%{transform:scaleY(0)} 100%{transform:scaleY(1)} }
+.s-bonus .b-card-icon .chip{ position:absolute; top:24px; left:26px; width:52px; height:38px; border-radius:7px; background:rgba(255,255,255,0.92); z-index:2; }
+.s-bonus .b-card-icon .stripe{ position:absolute; top:33px; right:24px; width:108px; height:14px; border-radius:7px; background:rgba(255,255,255,0.5); z-index:2; }
+@keyframes bonusDrop{
+  0%{ opacity:0; transform:translate(calc(-50% + var(--dx,0px)),-40px) scale(0.6); }
+  16%{ opacity:1; transform:translate(calc(-50% + var(--dx,0px)),-10px) scale(1); }
+  72%{ opacity:1; }
+  100%{ opacity:0; transform:translate(-50%,168px) scale(0.4); }
+}
+
+/* ── сцена 3: логотипы AWS + LSON ── */
+.s-bonus .b-brands{ display:flex; align-items:center; justify-content:center; gap:56px; margin-bottom:50px; }
+.s-bonus .b-logo{ background:#fff; border-radius:18px; width:344px; height:176px; padding:22px 40px; box-sizing:border-box; box-shadow:0 16px 40px rgba(0,0,0,0.4),0 0 70px rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+.s-bonus .b-logo img{ max-height:104px; max-width:100%; width:auto; height:auto; display:block; }
+.s-bonus .b-logo.lson{ font-size:76px; font-weight:900; letter-spacing:4px; color:#111; }
+.s-bonus.active .sc3 .b-logo:nth-child(1){ animation:flyFromLeft .8s 15.0s forwards; }
+.s-bonus.active .sc3 .b-logo:nth-child(2){ animation:flyFromRight .8s 15.8s forwards; }
+
+/* ── сцена 4: счётчик 0 → 30% ── */
+.s-bonus .b-counter{ font-size:210px; font-weight:900; line-height:1; letter-spacing:-6px; margin-bottom:24px; }
+
+/* ── сцена 5: касса ── */
+.s-bonus .b-kassa{ width:160px; height:120px; margin-bottom:44px; }
+.s-bonus .b-kassa svg{ width:100%; height:100%; }
+
+/* ── сцена 6: карта поменьше ── */
+.s-bonus .sc6 .b-card-wrap{ width:470px; height:316px; margin-bottom:38px; }
+
+/* ── таймлайн сцен ── */
+.s-bonus.active .sc1{ animation:zoomIn .8s .2s forwards, wipeLeftOut .7s 6.5s forwards; }
+.s-bonus.active .sc1 .b-card-wrap{ animation:scIn .7s .5s forwards; }
+.s-bonus .scene .sc-main.sc-words{ opacity:1; }
+.s-bonus .sc-words .wr{ display:inline-block; opacity:0; }
+.s-bonus.active .sc-words .wr{ animation:scIn .5s forwards; }
+.s-bonus.active .sc2{ animation:wipeRightIn .7s 7.2s forwards, zoomOut .6s 13.5s forwards; }
+.s-bonus.active .sc2 .b-accum{ animation:scIn .6s 7.6s forwards; }
+.s-bonus.active .sc3{ animation:zoomIn .7s 14.2s forwards, wipeRightOut .7s 20.5s forwards; }
+.s-bonus.active .sc4{ animation:wipeLeftIn .7s 21.2s forwards, irisOut .7s 27.5s forwards; }
+.s-bonus.active .sc4 .b-counter{ animation:scPop .6s 21.6s forwards, gradText 3s 21.6s ease 2; }
+.s-bonus.active .sc5{ animation:irisIn .7s 28.2s forwards, zoomOut .6s 34.0s forwards; }
+.s-bonus.active .sc5 .b-kassa{ animation:scPop .5s 28.6s forwards; }
+.s-bonus.active .sc6{ animation:zoomIn .7s 34.6s forwards, zoomOut .5s 41.0s forwards; }
+.s-bonus.active .sc6 .b-card-wrap{ animation:scIn .7s 34.9s forwards; }
+.s-bonus.active .sc6 .sc-sub-big{ animation:scIn .5s 36.7s forwards; }
 </style>
 </head>
 <body>
@@ -796,6 +893,82 @@ html, body {
     <div class="scene sc6">
       <div class="sc-check"><svg viewBox="0 0 48 36" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="42" height="26" rx="3"/><path d="M3 13h42"/><rect x="8" y="19" width="11" height="7" rx="1"/></svg></div>
       <div class="sc-main">ПОЛУЧИТЕ КАРТУ<br><span class="or">У ОПЕРАТОРА</span></div>
+    </div>
+  </div>
+
+  <!-- СЛАЙД: БОНУСНАЯ КАРТА (анимация · продолжение карты скидок) -->
+  <div class="slide s-bonus" id="sB" data-duration="42000">
+    <div class="particles" data-particles></div>
+    <div class="bg-sym">%</div>
+    <div class="vignette"></div>
+    <div class="light-sweep"></div>
+
+    <!-- Сцена 1: карта появляется, переливается и переворачивается -->
+    <div class="scene sc1">
+      <div class="b-card-wrap">
+        <div class="b-card">
+          <div class="b-face b-front"></div>
+          <div class="b-face b-back"></div>
+        </div>
+        <div class="b-shine"></div>
+      </div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:1.15s">Поменяй</span> <span class="wr" style="animation-delay:1.32s">карту</span> <span class="wr" style="animation-delay:1.49s">скидок</span><br><span class="wr" style="animation-delay:1.72s">на</span> <span class="wr or" style="animation-delay:1.89s">бонусную</span> <span class="wr or" style="animation-delay:2.06s">карту!</span></div>
+    </div>
+
+    <!-- Сцена 2: за каждую покупку 1% -->
+    <div class="scene sc2">
+      <div class="b-accum">
+        <div class="b-purchase">
+          <svg viewBox="0 0 48 48" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="42" r="3"/><circle cx="36" cy="42" r="3"/><path d="M2 2h8l5.5 22h21l5-18H14"/><path d="M15.5 24l-2 8h25"/></svg>
+          <span>Покупка</span>
+        </div>
+        <div class="b-drop-zone">
+          <span class="pct-chip" style="--dx:-40px;animation-delay:0.2s">1%</span>
+          <span class="pct-chip" style="--dx:30px;animation-delay:1.0s">1%</span>
+          <span class="pct-chip" style="--dx:-8px;animation-delay:1.8s">1%</span>
+          <span class="pct-chip" style="--dx:50px;animation-delay:2.6s">1%</span>
+          <div class="b-card-icon">
+            <div class="b-card-fill"></div>
+            <div class="chip"></div>
+            <div class="stripe"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:8.40s">За</span> <span class="wr" style="animation-delay:8.55s">каждую</span> <span class="wr" style="animation-delay:8.70s">покупку</span> <span class="wr" style="animation-delay:8.85s">—</span> <span class="wr or" style="animation-delay:9.00s">1%</span> <span class="wr or" style="animation-delay:9.15s">от</span> <span class="wr or" style="animation-delay:9.30s">суммы</span></div>
+    </div>
+
+    <!-- Сцена 3: AWS и LSON — 5% -->
+    <div class="scene sc3">
+      <div class="b-brands">
+        <div class="b-logo"><img src="aws-logo.webp" alt="AWS"></div>
+        <div class="b-logo lson">LSON</div>
+      </div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:16.80s">На</span> <span class="wr" style="animation-delay:16.94s">продукцию</span> <span class="wr" style="animation-delay:17.08s">AWS</span> <span class="wr" style="animation-delay:17.22s">и</span> <span class="wr" style="animation-delay:17.36s">LSON</span> <span class="wr" style="animation-delay:17.50s">—</span> <span class="wr or" style="animation-delay:17.64s">5%</span></div>
+    </div>
+
+    <!-- Сцена 4: списание до 30% -->
+    <div class="scene sc4">
+      <div class="b-counter grad-text" data-bcount="30">0%</div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:23.40s">Максимальное</span> <span class="wr" style="animation-delay:23.53s">списание</span> <span class="wr" style="animation-delay:23.66s">бонусов</span> <span class="wr" style="animation-delay:23.79s">—</span><br><span class="wr or" style="animation-delay:23.95s">до</span> <span class="wr or" style="animation-delay:24.08s">30%</span> <span class="wr" style="animation-delay:24.21s">от</span> <span class="wr" style="animation-delay:24.34s">последующей</span> <span class="wr" style="animation-delay:24.47s">покупки</span></div>
+    </div>
+
+    <!-- Сцена 5: только на кассе -->
+    <div class="scene sc5">
+      <div class="b-kassa"><svg viewBox="0 0 48 36" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="42" height="26" rx="3"/><path d="M3 13h42"/><rect x="8" y="19" width="11" height="7" rx="1"/></svg></div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:29.40s">Бонусы</span> <span class="wr" style="animation-delay:29.54s">начисляются</span><br><span class="wr or" style="animation-delay:29.70s">только</span> <span class="wr or" style="animation-delay:29.84s">при</span> <span class="wr or" style="animation-delay:29.98s">оплате</span> <span class="wr or" style="animation-delay:30.12s">на</span> <span class="wr or" style="animation-delay:30.26s">кассе</span></div>
+    </div>
+
+    <!-- Сцена 6: карта снова + контакты -->
+    <div class="scene sc6">
+      <div class="b-card-wrap">
+        <div class="b-card">
+          <div class="b-face b-front"></div>
+          <div class="b-face b-back"></div>
+        </div>
+        <div class="b-shine"></div>
+      </div>
+      <div class="sc-main sc-words"><span class="wr" style="animation-delay:35.50s">Подробности</span> <span class="wr" style="animation-delay:35.64s">уточняйте</span><br><span class="wr" style="animation-delay:35.80s">у</span> <span class="wr" style="animation-delay:35.94s">кассира</span> <span class="wr" style="animation-delay:36.08s">или</span> <span class="wr" style="animation-delay:36.22s">оператора</span></div>
+      <div class="sc-sub-big">Или на сайте <span class="or">stv39.ru</span></div>
     </div>
   </div>
 
@@ -1088,9 +1261,53 @@ function stopCardAnim(el){
   el.querySelectorAll('.dc-confetti').forEach(c=>c.remove());
 }
 
+// ── Бонусная карта: подготовка, старт, остановка (продолжение карты скидок) ──
+let _bonusTimers = [];
+function setupBonusOnce(el){
+  if (el.dataset.bonusReady) return;
+  el.dataset.bonusReady = '1';
+  // Частицы (создаются один раз)
+  const pc = el.querySelector('[data-particles]');
+  if (pc){
+    for (let i=0;i<8;i++){
+      const p = document.createElement('div'); p.className='particle';
+      const sz = 2 + Math.random()*5, dur = 14 + Math.random()*16, delay = Math.random()*20;
+      p.style.cssText = 'width:'+sz+'px;height:'+sz+'px;left:'+(Math.random()*100)+'%;--p-dur:'+dur+'s;--p-delay:-'+delay+'s;';
+      pc.appendChild(p);
+    }
+  }
+  // Конфетти-keyframes (общие с картой скидок; создаём, если ещё нет)
+  if (!document.getElementById('dc-confetti-keyframes')){
+    const style = document.createElement('style'); style.id='dc-confetti-keyframes'; let rules='';
+    for (let i=0;i<30;i++){
+      const dx=(Math.random()-0.5)*1500, peakY=-(250+Math.random()*450), finalY=350+Math.random()*400, rot=Math.random()*1200-600;
+      rules += '@keyframes cf'+i+'{0%{transform:translate(0,0) rotate(0deg) scale(0);opacity:1}'+
+               '20%{transform:translate('+(dx*0.25)+'px,'+peakY+'px) rotate('+(rot*0.3)+'deg) scale(1.1);opacity:1}'+
+               '70%{opacity:.8}'+
+               '100%{transform:translate('+dx+'px,'+finalY+'px) rotate('+rot+'deg) scale(.3);opacity:0}}';
+    }
+    style.textContent = rules; document.head.appendChild(style);
+  }
+}
+function startBonusAnim(el){
+  setupBonusOnce(el);
+  const cnt = el.querySelector('[data-bcount]');
+  if (cnt) cnt.textContent = '0%';
+  el.classList.remove('active'); void el.offsetWidth; el.classList.add('active');
+  if (cnt) _bonusTimers.push(setTimeout(()=>countUp(cnt, parseInt(cnt.dataset.bcount)||30), 22200));
+  _bonusTimers.push(setTimeout(()=>fireConfetti(el), 35300));
+}
+function stopBonusAnim(el){
+  _bonusTimers.forEach(clearTimeout);
+  _bonusTimers = [];
+  el.classList.remove('active');
+  el.querySelectorAll('.dc-confetti').forEach(c=>c.remove());
+}
+
 function goTo(idx){
   const prevEl = slides[cur];
   if (prevEl.classList.contains('s-card')) stopCardAnim(prevEl);
+  if (prevEl.classList.contains('s-bonus')) stopBonusAnim(prevEl);
   resetItems(prevEl);
   // освободить общий плеер при уходе с видео-слайда (важно для Smart TV)
   if (prevEl.classList.contains('vid') && prevEl.contains(tvVideo)){
@@ -1107,6 +1324,7 @@ function goTo(idx){
   updateDots(cur);
   setTimeout(()=>animateItems(nextEl), 50);
   if (nextEl.classList.contains('s-card')) startCardAnim(nextEl);
+  if (nextEl.classList.contains('s-bonus')) startBonusAnim(nextEl);
   startProg();
 }
 
@@ -1159,6 +1377,7 @@ requestAnimationFrame(()=>{
   setTimeout(()=>animateItems(slides[0]), 100);
 });
 if (slides[0].classList.contains('s-card')) startCardAnim(slides[0]);
+if (slides[0].classList.contains('s-bonus')) startBonusAnim(slides[0]);
 startProg();
 
 document.addEventListener('keydown',e=>{
