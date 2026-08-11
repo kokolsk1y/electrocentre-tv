@@ -40,6 +40,20 @@ html, body {
   background: #000;
   margin:0; padding:0;
 }
+#fullscreen-btn {
+  position:fixed; top:18px; right:18px; z-index:5000;
+  min-width:210px; min-height:54px; padding:10px 18px;
+  border:2px solid rgba(255,255,255,.75); border-radius:8px;
+  background:rgba(27,48,115,.92); color:#fff;
+  font-family:'Montserrat',sans-serif; font-size:17px; font-weight:700;
+  cursor:pointer; opacity:.82;
+  box-shadow:0 4px 18px rgba(0,0,0,.28);
+}
+#fullscreen-btn:hover,
+#fullscreen-btn:focus {
+  opacity:1; outline:5px solid #FF6B2B; outline-offset:3px;
+}
+#fullscreen-btn.is-hidden { display:none; }
 #wrap {
   width:1920px; height:1080px;
   position:absolute; top:0; left:0;
@@ -730,6 +744,7 @@ html, body {
 </style>
 </head>
 <body>
+<button id="fullscreen-btn" type="button" autofocus aria-label="Перейти в полноэкранный режим">⛶ Во весь экран</button>
 <div id="wrap">
 <!-- ══ HEADER ══ -->
 <header class="hdr">
@@ -1405,11 +1420,57 @@ document.addEventListener('DOMContentLoaded',function(){
   window.addEventListener('resize',scale);
 })();
 
-/* ══ АВТО-ПОЛНОЭКРАННЫЙ РЕЖИМ ══ */
-document.addEventListener('click',function(){
+/* ══ ПОЛНОЭКРАННЫЙ РЕЖИМ — кнопка пульта Samsung + старые Tizen/WebKit ══ */
+(function(){
+  var btn=document.getElementById('fullscreen-btn');
   var el=document.documentElement;
-  if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen();
-});
+  var defaultText='⛶ Во весь экран';
+  var resetTextTimer;
+
+  function isFullscreen(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+      document.msFullscreenElement || document.mozFullScreenElement);
+  }
+
+  function syncButton(){
+    btn.classList.toggle('is-hidden',isFullscreen());
+    if(!isFullscreen()) btn.textContent=defaultText;
+  }
+
+  function showFullscreenError(){
+    clearTimeout(resetTextTimer);
+    btn.classList.remove('is-hidden');
+    btn.textContent='Не удалось — нажмите ещё раз';
+    resetTextTimer=setTimeout(function(){ btn.textContent=defaultText; },3500);
+  }
+
+  function enterFullscreen(){
+    if(isFullscreen()) return;
+    var request=el.requestFullscreen || el.webkitRequestFullscreen ||
+      el.msRequestFullscreen || el.mozRequestFullScreen;
+    if(!request){ showFullscreenError(); return; }
+    try {
+      var result=request.call(el);
+      if(result && typeof result.catch==='function') result.catch(showFullscreenError);
+    } catch(error){
+      showFullscreenError();
+    }
+  }
+
+  btn.addEventListener('click',function(event){
+    event.stopPropagation();
+    enterFullscreen();
+  });
+  document.addEventListener('click',enterFullscreen);
+  document.addEventListener('fullscreenchange',syncButton);
+  document.addEventListener('webkitfullscreenchange',syncButton);
+  document.addEventListener('MSFullscreenChange',syncButton);
+  document.addEventListener('mozfullscreenchange',syncButton);
+
+  /* Select/OK на Samsung активирует сфокусированную HTML-кнопку. */
+  try { btn.focus(); } catch(error) {}
+  syncButton();
+})();
 </script>
 
 </div><!-- #wrap -->
