@@ -1,0 +1,13 @@
+{
+  "name": "radio-smarttv-admin",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-15",
+  "d1_databases": [{ "binding": "DB", "database_name": "radio-smarttv", "database_id": "REPLACE_WITH_D1_ID" }],
+  "r2_buckets": [{ "binding": "BANNERS", "bucket_name": "radio-smarttv-banners" }],
+  "images": { "binding": "IMAGES" },
+  "triggers": { "crons": ["0 */6 * * *"] },
+  "vars": {
+    "TV_PAGE_URL": "https://kokolsk1y.github.io/electrocentre-tv/electrocentre-tv-v2.1.html",
+    "DEMO_HTML_URL": "https://raw.githubusercontent.com/kokolsk1y/electrocentre-tv/codex/banner-bot/electrocentre-tv-v2.1.html"
+  }
+}

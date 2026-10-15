@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<!-- После развёртывания Worker укажите его адрес без завершающего /api. Пустое значение оставляет текущий эфир. -->
+<meta name="tv-playlist-api" content="https://radio-smarttv-admin.ikokolsk1y.workers.dev">
+<!-- Для предпросмотра через собственный домен Worker можно указать здесь только имя хоста. -->
+<meta name="tv-playlist-preview-host" content="">
 <title>ЭлектроЦентр — Smart TV</title>
 <style>
 /* Montserrat — self-hosted, кириллица */
@@ -108,6 +113,22 @@ html, body {
   pointer-events:none; overflow:hidden;
 }
 .slide.on { opacity:1; pointer-events:auto; }
+
+/* ══ ОЧЕРЕДЬ ЗАКАЗОВ — включается только на локальном /tv/?zone=rest_room ══ */
+#order-announcement {
+  display:none; position:absolute; inset:0; z-index:1000;
+  align-items:center; justify-content:center;
+  background:rgba(10,20,45,.95); color:#fff; text-align:center;
+}
+#order-announcement.active { display:flex; }
+.order-card {
+  min-width:1040px; padding:72px 100px 82px; border:7px solid #10b981;
+  border-radius:34px; background:#172554;
+  box-shadow:0 0 70px rgba(16,185,129,.5);
+}
+.order-kicker { color:#6ee7b7; font-size:36px; font-weight:800; letter-spacing:3px; text-transform:uppercase; }
+.order-number { margin-top:18px; color:#d1fae5; font-size:230px; font-weight:900; line-height:1; text-shadow:0 0 28px rgba(16,185,129,.62); }
+.order-room { margin-top:26px; color:#fde047; font-size:58px; font-weight:800; }
 
 /* ══ APPEAR ITEMS ══ */
 .ap {
@@ -803,7 +824,7 @@ html, body {
   </div>
 
   <!-- ОКТЯБРЬ 1/6: скидка 15% на выделенный ассортимент LED LINE · до 31.10.2026 -->
-  <div class="slide banner" id="oct1" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct1" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-skidka-led-line-1026.webp?v=oct2026" alt="Скидка 15 процентов на выделенный ассортимент LED LINE">
   </div>
 
@@ -973,7 +994,7 @@ html, body {
   </div>
 
   <!-- ОКТЯБРЬ 2/6: кронштейн в подарок к светильнику ДКУ 1012-200Ш · до 31.10.2026 -->
-  <div class="slide banner" id="oct2" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct2" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-kronshtein-dku-1026.webp?v=oct2026" alt="Кронштейн в подарок к светильнику ДКУ 1012-200Ш">
   </div>
 
@@ -999,7 +1020,7 @@ html, body {
   </div>
 
   <!-- ОКТЯБРЬ 3/6: термоусадки в подарок к кабельным коннекторам · до 31.10.2026 -->
-  <div class="slide banner" id="oct3" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct3" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-termousadki-konnektory-1026.webp?v=oct2026" alt="Термоусадки в подарок к кабельным коннекторам">
   </div>
 
@@ -1007,7 +1028,7 @@ html, body {
   <div class="slide vid" data-src="videos/seriya-4.mp4"></div>
 
   <!-- ОКТЯБРЬ 4/6: 10 дисков в подарок к УШМ KSM05-125 · до 31.10.2026 -->
-  <div class="slide banner" id="oct4" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct4" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-diski-ushm-dck-1026.webp?v=oct2026" alt="Десять дисков в подарок к УШМ KSM05-125">
   </div>
 
@@ -1015,7 +1036,7 @@ html, body {
   <div class="slide vid" data-src="videos/seriya-5.mp4"></div>
 
   <!-- ОКТЯБРЬ 5/6: коробка бесплатно к гофротрубе от 1 000 ₽ · до 31.10.2026 -->
-  <div class="slide banner" id="oct5" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct5" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-korobka-gofrotruba-1026.webp?v=oct2026" alt="Коробка бесплатно к гофротрубе на сумму от 1 000 рублей">
   </div>
 
@@ -1023,7 +1044,7 @@ html, body {
   <div class="slide vid" data-src="videos/seriya-6.mp4"></div>
 
   <!-- ОКТЯБРЬ 6/6: крепёж 25 шт. в подарок к шкафу SKAT TV Bastion · до 31.10.2026 -->
-  <div class="slide banner" id="oct6" data-duration="10000" data-show-until="2026-10-31">
+  <div class="slide banner" id="oct6" data-duration="10000">
     <img src="slides/01.10-31.10.26/942-krepezh-shkaf-skat-1026.webp?v=oct2026" alt="Крепёж 25 штук в подарок к шкафу SKAT TV Bastion">
   </div>
 
@@ -1067,27 +1088,8 @@ function tick(){
 }
 tick(); setInterval(tick,1000);
 
-// ── Авто-удаление просроченных слайдов (data-show-until="YYYY-MM-DD") ──
-// Слайд крутится весь день указанной даты; убирается после 18:00 этого дня.
-function _showUntilCutoff(s){ return new Date(s + 'T18:00:00'); }
-(function pruneExpired(){
-  const now = new Date();
-  document.querySelectorAll('.slide[data-show-until]').forEach(el=>{
-    if (now > _showUntilCutoff(el.dataset.showUntil)) el.remove();
-  });
-})();
-// каждые 5 минут проверять и при необходимости перезагрузить страницу
-setInterval(function(){
-  const now = new Date();
-  let expired = false;
-  document.querySelectorAll('.slide[data-show-until]').forEach(el=>{
-    if (now > _showUntilCutoff(el.dataset.showUntil)) expired = true;
-  });
-  if (expired) location.reload();
-}, 5*60*1000);
-
 // ── Slides ──
-const slides = document.querySelectorAll('.slide');
+let slides = Array.prototype.slice.call(document.querySelectorAll('.stage > .slide'));
 let cur = 0, timer;
 
 // ── Один общий видео-плеер на все ролики (Smart TV держит мало декодеров) ──
@@ -1097,16 +1099,233 @@ tvVideo.muted = true; tvVideo.setAttribute('muted','');
 tvVideo.playsInline = true; tvVideo.setAttribute('playsinline','');
 tvVideo.preload = 'auto';
 
-// Build dots
-(function(){
+// Встроенные сцены остаются в HTML: Worker задаёт лишь их место в общем списке.
+const stage = document.querySelector('.stage');
+const builtinSlides = Object.create(null);
+slides.forEach(function(el){ if (el.id && !el.classList.contains('banner')) builtinSlides[el.id] = el; });
+let pendingPlaylist = null;
+let activePlaylistKey = null;
+let pendingPlaylistKey = null;
+let playlistRequestInFlight = false;
+let playlistPollQueued = false;
+let nextChangeTimer = null;
+const publishedCacheKey = 'electrocentre-tv-published-playlist-v1';
+
+function queryValue(name){
+  const match = new RegExp('(?:^|&)' + name + '=([^&]*)').exec(window.location.search.slice(1));
+  try { return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : ''; }
+  catch(e){ return ''; }
+}
+const previewToken = queryValue('preview');
+const previewAt = queryValue('at');
+const apiMeta = document.querySelector('meta[name="tv-playlist-api"]');
+const configuredApiBase = apiMeta ? apiMeta.content.replace(/\/+$/, '') : '';
+const previewHostMeta = document.querySelector('meta[name="tv-playlist-preview-host"]');
+const previewApi = previewToken ? queryValue('api') : '';
+function safePreviewApiBase(candidate){
+  // Принимаем только origin по HTTPS: без пути, порта кроме 443, userinfo и query.
+  const match = /^https:\/\/([a-z0-9][a-z0-9.-]*)(?::443)?\/?$/i.exec(candidate);
+  if (!match) return '';
+  const host = match[1].toLowerCase();
+  const extraHost = previewHostMeta ? previewHostMeta.content.trim().toLowerCase() : '';
+  const configuredMatch = /^https:\/\/([a-z0-9][a-z0-9.-]*)(?::443)?\/?$/i.exec(configuredApiBase);
+  const configuredHost = configuredMatch ? configuredMatch[1].toLowerCase() : '';
+  if (extraHost){
+    if (host !== extraHost) return '';
+  } else if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.workers\.dev$/.test(host) && host !== configuredHost) return '';
+  return 'https://' + host;
+}
+const playlistApiBase = previewToken && previewApi ? safePreviewApiBase(previewApi) : configuredApiBase;
+
+function showPlaylistNotice(message, error){
+  let notice = document.getElementById('playlist-notice');
+  if (!notice){
+    notice = document.createElement('div');
+    notice.id = 'playlist-notice';
+    document.body.appendChild(notice);
+  }
+  // До получения черновика полностью закрываем действующий эфир, чтобы его не приняли за предпросмотр.
+  notice.style.cssText = previewToken && !activePlaylistKey
+    ? 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;font:700 32px Arial,sans-serif;color:#fff;'
+    : 'position:fixed;top:0;left:0;right:0;z-index:2000;padding:8px 20px;text-align:center;font:700 18px Arial,sans-serif;color:#fff;pointer-events:none;';
+  notice.style.background = error ? '#a32020' : '#2548ae';
+  notice.textContent = message;
+}
+if (previewToken) showPlaylistNotice('ПРЕДПРОСМОТР ЧЕРНОВИКА — загрузка', false);
+
+function validMediaUrl(src){
+  return typeof src === 'string' && src.length > 0 && src.length < 2048 &&
+    !/^\s*(?:data:|javascript:|\/\/)/i.test(src) &&
+    (/^https:\/\//i.test(src) || !/^[a-z][a-z0-9+.-]*:/i.test(src));
+}
+
+function validatePlaylist(data){
+  if (!data || !Array.isArray(data.items) || !data.items.length || data.items.length > 100) throw new Error('Пустой или слишком большой список');
+  const ids = Object.create(null), usedBuiltin = Object.create(null);
+  data.items.forEach(function(item){
+    if (!item || typeof item.id !== 'string' || !item.id || ids[item.id]) throw new Error('Некорректный ID объекта');
+    ids[item.id] = true;
+    if (item.kind === 'builtin'){
+      if (!builtinSlides[item.templateId] || usedBuiltin[item.templateId]) throw new Error('Неизвестная встроенная сцена');
+      usedBuiltin[item.templateId] = true;
+    } else if (item.kind === 'image' || item.kind === 'video'){
+      if (!validMediaUrl(item.src)) throw new Error('Некорректный адрес медиа');
+      // Ролики размещаются отдельно в каталоге videos; путь не может выйти за его пределы.
+      if (item.kind === 'video' && !/^videos\/[A-Za-z0-9_-]+\.mp4$/.test(item.src)) throw new Error('Некорректный путь ролика');
+      if (item.kind === 'image' && (!isFinite(Number(item.durationSeconds)) || Number(item.durationSeconds) < 1 || Number(item.durationSeconds) > 3600)) throw new Error('Некорректная длительность баннера');
+    } else throw new Error('Неизвестный тип объекта');
+  });
+  return JSON.stringify(data.items);
+}
+
+function preloadPlaylistMedia(items, skipVideoChecks){
+  const images = items.filter(function(item){ return item.kind === 'image'; }).map(function(item){
+    return new Promise(function(resolve, reject){
+      const img = new Image();
+      const timeout = setTimeout(function(){ reject(new Error('Загрузка изображения превысила 20 секунд')); }, 20000);
+      img.onload = function(){ clearTimeout(timeout); resolve(); };
+      img.onerror = function(){ clearTimeout(timeout); reject(new Error('Изображение недоступно: ' + item.id)); };
+      img.src = item.src;
+    });
+  });
+  const videos = (skipVideoChecks ? [] : items.filter(function(item){ return item.kind === 'video'; })).map(function(item){
+    return fetch(item.src, {method:'HEAD', cache:'no-store'}).then(function(response){
+      if (!response.ok) throw new Error('Ролик недоступен: ' + item.name);
+    });
+  });
+  return Promise.all(images.concat(videos));
+}
+
+function restorePublishedPlaylist(){
+  if (previewToken || !playlistApiBase) return;
+  let cached, key;
+  try {
+    cached = JSON.parse(window.localStorage.getItem(publishedCacheKey));
+    if (!cached || cached.apiBase !== playlistApiBase) return;
+    key = validatePlaylist(cached);
+  } catch(e){ return; }
+  // Ролики проекта лежат локально; проверяем изображения, прежде чем брать сохранённый список.
+  preloadPlaylistMedia(cached.items, true).then(function(){
+    if (!activePlaylistKey && !pendingPlaylist){
+      pendingPlaylist = cached;
+      pendingPlaylistKey = key;
+    }
+  }).catch(function(error){ console.warn('[Эфир] Сохранённый список недоступен:', error); });
+}
+
+function rememberPublishedPlaylist(data){
+  if (previewToken) return;
+  try {
+    window.localStorage.setItem(publishedCacheKey, JSON.stringify({apiBase:playlistApiBase, revision:data.revision, items:data.items}));
+  } catch(e){ console.warn('[Эфир] Не удалось сохранить список:', e); }
+}
+
+function renderPlaylist(items){
+  const nodes = items.map(function(item){
+    let el;
+    if (item.kind === 'builtin'){
+      el = builtinSlides[item.templateId];
+    } else {
+      el = document.createElement('div');
+      el.className = item.kind === 'video' ? 'slide vid' : 'slide banner';
+      if (item.kind === 'video') el.dataset.src = item.src;
+      else {
+        el.dataset.duration = String(Math.round(Number(item.durationSeconds) * 1000));
+        const img = document.createElement('img');
+        img.src = item.src;
+        img.alt = item.name || '';
+        el.appendChild(img);
+      }
+    }
+    el.dataset.playlistId = item.id;
+    return el;
+  });
+  slides.forEach(function(el){ if (el.parentNode === stage) stage.removeChild(el); });
+  nodes.forEach(function(el){ el.classList.remove('on'); stage.appendChild(el); });
+  slides = nodes;
+  buildDots();
+}
+
+function applyPendingPlaylist(){
+  if (!pendingPlaylist) return false;
+  renderPlaylist(pendingPlaylist.items);
+  activePlaylistKey = pendingPlaylistKey;
+  pendingPlaylist = null;
+  pendingPlaylistKey = null;
+  if (previewToken) showPlaylistNotice('ПРЕДПРОСМОТР ЧЕРНОВИКА' + (previewAt ? ' · ' + previewAt : ''), false);
+  return true;
+}
+
+function scheduleNextChange(value, generatedAt){
+  clearTimeout(nextChangeTimer);
+  nextChangeTimer = null;
+  if (previewAt || !value) return;
+  const due = Date.parse(value);
+  const serverNow = Date.parse(generatedAt);
+  if (!isFinite(due) || !isFinite(serverNow)) return;
+  const serverDelay = due - serverNow;
+  // Ориентируемся на часы Worker, иначе спешащие часы TV вызовут бесконечный опрос.
+  const delay = Math.max(2000, Math.min(serverDelay + 200, 2147483647));
+  nextChangeTimer = setTimeout(pollPlaylist, delay);
+}
+
+function pollPlaylist(){
+  if (playlistRequestInFlight){ playlistPollQueued = true; return; }
+  if (!playlistApiBase || typeof fetch !== 'function'){
+    if (previewToken) showPlaylistNotice('ЧЕРНОВИК НЕДОСТУПЕН — адрес API не настроен или не разрешён', true);
+    return;
+  }
+  const endpoint = previewToken
+    ? '/api/preview/' + encodeURIComponent(previewToken) + (previewAt ? '?at=' + encodeURIComponent(previewAt) : '')
+    : '/api/published';
+  playlistRequestInFlight = true;
+  const request = fetch(playlistApiBase + endpoint, {cache:'no-store', referrerPolicy:'no-referrer'})
+    .then(function(response){ if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
+    .then(function(data){
+      const key = validatePlaylist(data);
+      if (key === activePlaylistKey || key === pendingPlaylistKey) return {data:data, key:key};
+      return preloadPlaylistMedia(data.items).then(function(){
+        return {data:data, key:key};
+      });
+    });
+  let timeoutId;
+  const timeout = new Promise(function(resolve, reject){
+    timeoutId = setTimeout(function(){ reject(new Error('Превышено время ожидания API или медиа')); }, 25000);
+  });
+  Promise.race([request, timeout])
+    .then(function(result){
+      scheduleNextChange(result.data.nextChangeAt, result.data.generatedAt);
+      if (result.key === activePlaylistKey || result.key === pendingPlaylistKey) return;
+      pendingPlaylist = result.data;
+      pendingPlaylistKey = result.key;
+      rememberPublishedPlaylist(result.data);
+      if (previewToken) showPlaylistNotice('ПРЕДПРОСМОТР ЧЕРНОВИКА — готово к переключению', false);
+    })
+    .catch(function(error){
+      console.warn('[Эфир] Список не обновлён:', error);
+      if (previewToken && !activePlaylistKey) showPlaylistNotice('ЧЕРНОВИК НЕДОСТУПЕН — ' + error.message, true);
+    })
+    .then(function(){
+      clearTimeout(timeoutId);
+      playlistRequestInFlight = false;
+      if (playlistPollQueued){
+        playlistPollQueued = false;
+        setTimeout(pollPlaylist, 0);
+      }
+    });
+}
+
+function buildDots(){
   const w = document.getElementById('dotsWrap');
+  while (w.firstChild) w.removeChild(w.firstChild);
   slides.forEach((_,i)=>{
     const d = document.createElement('div');
     d.className = 'sdot' + (i===0?' on':'');
     d.onclick = ()=>{ clearInterval(timer); goTo(i); };
     w.appendChild(d);
   });
-})();
+}
+buildDots();
 
 function updateDots(i){
   document.querySelectorAll('.sdot').forEach((d,j)=>d.classList.toggle('on',j===i));
@@ -1290,6 +1509,7 @@ function stopBonusAnim(el){
 }
 
 function goTo(idx){
+  clearInterval(timer);
   const prevEl = slides[cur];
   if (prevEl.classList.contains('s-card')) stopCardAnim(prevEl);
   if (prevEl.classList.contains('s-bonus')) stopBonusAnim(prevEl);
@@ -1303,6 +1523,7 @@ function goTo(idx){
     if (tvVideo.parentNode) tvVideo.parentNode.removeChild(tvVideo);
   }
   prevEl.classList.remove('on');
+  if (applyPendingPlaylist()) idx = 0;
   cur = ((idx % slides.length) + slides.length) % slides.length;
   const nextEl = slides[cur];
   nextEl.classList.add('on');
@@ -1311,6 +1532,9 @@ function goTo(idx){
   if (nextEl.classList.contains('s-card')) startCardAnim(nextEl);
   if (nextEl.classList.contains('s-bonus')) startBonusAnim(nextEl);
   startProg();
+  // Новая публикация может появиться между периодическими опросами.
+  // Запрос не задерживает переход: свежий список вступит в силу на следующей границе.
+  pollPlaylist();
 }
 
 function startProg(){
@@ -1364,11 +1588,178 @@ requestAnimationFrame(()=>{
 if (slides[0].classList.contains('s-card')) startCardAnim(slides[0]);
 if (slides[0].classList.contains('s-bonus')) startBonusAnim(slides[0]);
 startProg();
+restorePublishedPlaylist();
+pollPlaylist();
+if (playlistApiBase) setInterval(pollPlaylist, 30000);
 
 document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'){ clearInterval(timer); goTo(cur+1); }
   if(e.key==='ArrowLeft') { clearInterval(timer); goTo(cur-1); }
 });
+</script>
+
+<!-- Локальное объявление готового заказа поверх рекламы -->
+<div id="order-announcement" aria-live="polite">
+  <div class="order-card">
+    <div class="order-kicker">Заказ готов к выдаче</div>
+    <div class="order-number" id="order-announcement-number">000</div>
+    <div class="order-room" id="order-announcement-room">Место выдачи К1</div>
+  </div>
+</div>
+
+<script>
+/*
+  Этот блок намеренно не обращается к IP-адресу очереди.
+  Он работает только когда Flask отдаёт страницу по /tv/?zone=rest_room,
+  поэтому публичная версия на GitHub Pages остаётся обычной рекламой.
+*/
+(function(){
+  if (window.__restRoomQueueStarted) return;
+  window.__restRoomQueueStarted = true;
+  const params = new URLSearchParams(window.location.search);
+  const queueMode = params.get('zone') === 'rest_room' && window.location.pathname.indexOf('/tv/') === 0;
+  if (!queueMode) return;
+
+  const overlay = document.getElementById('order-announcement');
+  const numberEl = document.getElementById('order-announcement-number');
+  const roomEl = document.getElementById('order-announcement-room');
+  const announced = Object.create(null);
+  const audioQueue = [];
+  let firstSync = true;
+  let isPlaying = false;
+  let requestInFlight = false;
+  let pausedStaticSlide = false;
+
+  function isRestRoomOrder(order){
+    const room = String(order.room || '').toLowerCase();
+    return room.indexOf('т4') !== -1 || room.indexOf('к1') !== -1 || room === 'склад';
+  }
+
+  function getAudioSuffix(room){
+    const value = String(room || '').toLowerCase();
+    if (value.indexOf('т4') !== -1) return 't4';
+    if (value.indexOf('т1') !== -1) return 't1';
+    return 'k1';
+  }
+
+  function pauseBroadcast(){
+    const activeSlide = slides[cur];
+    if (activeSlide.classList.contains('vid') && activeSlide.contains(tvVideo)) {
+      tvVideo.pause();
+      return;
+    }
+    clearInterval(timer);
+    pausedStaticSlide = true;
+  }
+
+  function resumeBroadcast(){
+    const activeSlide = slides[cur];
+    if (activeSlide.classList.contains('vid') && activeSlide.contains(tvVideo)) {
+      tvVideo.play().catch(()=>{});
+      return;
+    }
+    if (pausedStaticSlide) {
+      pausedStaticSlide = false;
+      startProg();
+    }
+  }
+
+  function showAnnouncement(item){
+    numberEl.textContent = item.shortNumber;
+    roomEl.textContent = item.room || 'Место выдачи К1';
+    overlay.classList.add('active');
+  }
+
+  function hideAnnouncement(){ overlay.classList.remove('active'); }
+
+  function playNext(){
+    if (isPlaying || audioQueue.length === 0) return;
+    isPlaying = true;
+    const item = audioQueue.shift();
+    pauseBroadcast();
+    showAnnouncement(item);
+
+    const audio = new Audio('/api/tts?filename=' + encodeURIComponent(item.filename));
+    let finished = false;
+    const finish = function(){
+      if (finished) return;
+      finished = true;
+      hideAnnouncement();
+      isPlaying = false;
+      if (audioQueue.length) {
+        window.setTimeout(playNext, 600);
+      } else {
+        resumeBroadcast();
+      }
+    };
+    audio.onended = finish;
+    audio.onerror = finish;
+    audio.play().catch(finish);
+  }
+
+  function enqueue(order, isRepeat){
+    const number = String(order.number || '');
+    const shortNumber = number.replace(/\D/g, '').slice(-3);
+    if (!shortNumber) return;
+    const room = String(order.room || 'Место выдачи К1');
+    audioQueue.push({
+      shortNumber: shortNumber,
+      room: room,
+      filename: 'order_spaced_' + shortNumber + '_' + getAudioSuffix(room) + '.mp3'
+    });
+    console.log('[Очередь] ' + (isRepeat ? 'Повтор' : 'Новый заказ') + ': ' + shortNumber + ' (' + room + ')');
+    playNext();
+  }
+
+  function processReadyOrders(orders){
+    const ready = orders.filter(isRestRoomOrder);
+    const currentNumbers = new Set(ready.map(order => String(order.number || '')));
+    Object.keys(announced).forEach(number => {
+      if (!currentNumbers.has(number)) delete announced[number];
+    });
+
+    const newOrders = ready.filter(order => !announced[String(order.number || '')]);
+    if (!firstSync && newOrders.length) {
+      Object.keys(announced).forEach(number => { announced[number].newOrdersSinceLast += newOrders.length; });
+    }
+
+    ready.forEach(order => {
+      const number = String(order.number || '');
+      if (!number) return;
+      if (!announced[number]) {
+        announced[number] = { count:1, newOrdersSinceLast:0 };
+        if (!firstSync) enqueue(order, false);
+        return;
+      }
+      const state = announced[number];
+      if (!firstSync && state.count < 3 && state.newOrdersSinceLast >= 2) {
+        state.count += 1;
+        state.newOrdersSinceLast = 0;
+        enqueue(order, true);
+      }
+    });
+    firstSync = false;
+  }
+
+  async function pollQueue(){
+    if (requestInFlight) return;
+    requestInFlight = true;
+    try {
+      const response = await fetch('/api/queue', { cache:'no-store' });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      processReadyOrders(Array.isArray(data.ready) ? data.ready : []);
+    } catch(error) {
+      console.warn('[Очередь] Сервер временно недоступен:', error);
+    } finally {
+      requestInFlight = false;
+    }
+  }
+
+  console.log('[Очередь] Режим комнаты ожидания включён.');
+  pollQueue();
+  window.setInterval(pollQueue, 2000);
+})();
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
