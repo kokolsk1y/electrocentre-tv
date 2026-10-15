@@ -7,10 +7,11 @@ const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(d
 const token = () => [...crypto.getRandomValues(new Uint8Array(32))].map(n => n.toString(16).padStart(2, '0')).join('');
 const clone = value => structuredClone(value);
 const apiBase = request => new URL(request.url).origin;
-const previewLink = (env, state, request) => {
+const previewLink = (env, state, request, at = null) => {
   const url = new URL('/demo', apiBase(request));
   url.searchParams.set('preview', state.preview_token);
   url.searchParams.set('api', apiBase(request));
+  if (at) url.searchParams.set('at', at);
   return url.href;
 };
 const cors = (response) => {
@@ -43,6 +44,7 @@ async function saveDraft(env, state, draft) {
 
 async function publish(env, state) {
   validatePlaylist(state.draft);
+  if (JSON.stringify(state.draft) === JSON.stringify(state.published)) throw new Error('В черновике нет новых изменений для публикации.');
   if (!project(state.draft).items.length) throw new Error('Нельзя опубликовать пустой на текущий момент эфир.');
   // Одна SQL-запись переключает весь набор. Токен отзывается при каждой публикации.
   const result = await env.DB.prepare('UPDATE app_state SET published_json=?,published_revision=published_revision+1,preview_token=?,updated_at=? WHERE id=1 AND draft_revision=? AND published_revision=?')
@@ -79,35 +81,89 @@ function monthRange(which) {
   const year = moscow.getUTCFullYear(), month = moscow.getUTCMonth() + (which === 'next' ? 1 : 0);
   return { startAt: new Date(Date.UTC(year, month, 1, -3)).toISOString(), endAt: new Date(Date.UTC(year, month + 1, 1, -3)).toISOString() };
 }
-const fmt = (slots, now = new Date()) => {
-  const current = project(slots, now).items;
-  const bySlot = new Map(current.map(i => [i.slot, i]));
-  return slots.map((s, i) => {
-    const c = bySlot.get(s.id);
-    const future = s.versions.filter(v => v.startAt && dateMs(v.startAt) > now.getTime()).map(v => ` → ${v.name} с ${v.startAt}`).join('');
-    return `${i + 1}. ${c ? `${c.kind === 'video' ? '🎬' : c.kind === 'image' ? '🖼️' : '📺'} ${c.name}${c.overdue ? ' ⚠️ срок вышел' : ''}${c.validUntil ? ` до ${c.validUntil}` : ''}` : '⏳ ещё не начался'}${future}`;
-  }).join('\n') || 'Список пуст.';
-};
+const PAGE_SIZE = 6;
+const shortName = (name, max = 32) => name.length > max ? `${name.slice(0, max - 1)}…` : name;
+const kindIcon = kind => kind === 'video' ? '🎬' : kind === 'image' ? '🖼️' : '📺';
+function slotLabel(slot, index) {
+  const current = project([slot]).items[0];
+  const future = slot.versions.filter(v => v.startAt && dateMs(v.startAt) > Date.now()).length;
+  const label = current ? `${kindIcon(current.kind)} ${current.name}${current.overdue ? ' ⚠️' : ''}` : `⏳ ${slot.versions[0].name}`;
+  return `${index + 1}. ${shortName(label, 48)}${future ? ` · замен: ${future}` : ''}`;
+}
 async function sendList(env, chatId, slots, title, revision, editable = false) {
-  const controls = editable ? slots.map((slot, index) => {
-    const n = index + 1;
-    const buttons = [];
-    if (project([slot]).items[0]?.kind === 'image') buttons.push({ text: `${n} ✏️`, callback_data: `replace:${n}:${revision}` });
-    buttons.push({ text: '🏷', callback_data: `rename:${n}:${revision}` });
-    buttons.push({ text: `${n} ⏱`, callback_data: `period:${n}:${revision}` });
-    if (n > 1) buttons.push({ text: '↑', callback_data: `up:${n}:${revision}` });
-    if (n < slots.length) buttons.push({ text: '↓', callback_data: `down:${n}:${revision}` });
-    buttons.push({ text: '✕', callback_data: `remove:${n}:${revision}` });
-    return buttons;
-  }) : [];
-  await send(env, chatId, `${title} #${revision}\n${fmt(slots)}\n\nКнопки: ✏️ заменить, ⏱ срок, ↑/↓ порядок, ✕ убрать.`, editable ? [...menu, ...controls] : menu);
-  const pictures = project(slots).items.filter(i => i.kind === 'image');
-  for (const item of pictures.slice(0, 20)) {
-    const url = new URL(item.src, env.TV_PAGE_URL).href;
-    try { await telegram(env, 'sendPhoto', { chat_id: chatId, photo: url, caption: `${item.position}. ${item.name}${item.overdue ? ' — срок вышел' : ''}` }); }
-    catch { await send(env, chatId, `${item.position}. ${item.name}: ${url}`); }
+  const lines = slots.map(slotLabel);
+  const summary = lines.length <= 25 ? lines.join('\n') : `${lines.slice(0, 25).join('\n')}\n… ещё ${lines.length - 25}. Откройте выбор объекта.`;
+  const buttons = editable ? [[{ text: 'Выбрать объект', callback_data: `pick:0:${revision}` }], ...menu] : menu;
+  return send(env, chatId, `${title} #${revision} · ${slots.length} объектов\n${summary || 'Пусто'}\n\nИзменения в черновике не влияют на эфир до публикации.`, buttons);
+}
+function pageKeyboard(prefix, page, total, revision, back = 'draft') {
+  const controls = [];
+  if (page > 0) controls.push({ text: '← Назад', callback_data: `${prefix}:${page - 1}:${revision}` });
+  if ((page + 1) * PAGE_SIZE < total) controls.push({ text: 'Далее →', callback_data: `${prefix}:${page + 1}:${revision}` });
+  return [...(controls.length ? [controls] : []), [{ text: 'К списку', callback_data: back }]];
+}
+async function sendPicker(env, chatId, state, page = 0) {
+  const total = state.draft.length;
+  const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+  if (!Number.isInteger(page) || page < 0 || page > maxPage) throw new Error('Страница списка изменилась. Откройте черновик заново.');
+  const offset = page * PAGE_SIZE;
+  const rows = state.draft.slice(offset, offset + PAGE_SIZE).map((slot, i) => [{ text: slotLabel(slot, offset + i), callback_data: `obj:${offset + i + 1}:${state.draft_revision}` }]);
+  return send(env, chatId, `Выберите объект · страница ${page + 1}/${maxPage + 1}`, [...rows, ...pageKeyboard('pick', page, total, state.draft_revision)]);
+}
+async function sendCard(env, chatId, state, position, versionIndex = null) {
+  const slot = state.draft[position - 1];
+  if (!slot) throw new Error('Объект больше не существует. Откройте список заново.');
+  const active = project([slot]).items[0];
+  const selectedIndex = versionIndex == null ? Math.max(0, slot.versions.findIndex(v => v.id === active?.id)) : versionIndex;
+  const version = slot.versions[selectedIndex];
+  if (!version) throw new Error('Версия объекта больше не существует. Откройте список заново.');
+  const future = version.startAt && dateMs(version.startAt) > Date.now();
+  const header = `Место ${position}/${state.draft.length} · ${kindIcon(version.kind)} ${version.name}\n${future ? 'Запланировано' : active?.id === version.id ? 'Сейчас в черновике' : 'Ранее'}\nНачало: ${version.startAt || 'сразу'}\nПлановый конец: ${version.endAt || 'бессрочно'}${active?.id === version.id && active.overdue ? '\n⚠️ Срок вышел, объект остаётся в эфире до замены.' : ''}`;
+  const rev = state.draft_revision;
+  const rows = [];
+  if (version.kind === 'image') rows.push([{ text: future ? 'Исправить эту замену' : 'Заменить изображение', callback_data: `repv:${position}:${selectedIndex}:${rev}` }, ...(!future ? [{ text: 'Запланировать замену', callback_data: `schedule:${position}:${rev}` }] : [])]);
+  rows.push([{ text: 'Название', callback_data: `renv:${position}:${selectedIndex}:${rev}` }, { text: 'Срок', callback_data: `perv:${position}:${selectedIndex}:${rev}` }]);
+  rows.push([{ text: 'Переместить', callback_data: `movep:${position}:0:${rev}` }, { text: slot.versions.length === 1 ? 'Убрать место' : future ? 'Удалить замену' : 'Удалить эту версию', callback_data: `delv:${position}:${selectedIndex}:${rev}` }]);
+  for (const [index, item] of slot.versions.entries()) if (index !== selectedIndex) rows.push([{ text: `Версия ${index + 1}: ${shortName(item.name, 22)}`, callback_data: `ver:${position}:${index}:${rev}` }]);
+  rows.push([{ text: '← Выбор объектов', callback_data: `pick:${Math.floor((position - 1) / PAGE_SIZE)}:${rev}` }]);
+  if (version.kind === 'image') {
+    const url = new URL(version.src, env.TV_PAGE_URL).href;
+    try { return await telegram(env, 'sendPhoto', { chat_id: chatId, photo: url, caption: header, reply_markup: { inline_keyboard: rows } }); }
+    catch { return send(env, chatId, `${header}\nИзображение: ${url}`, rows); }
   }
-  if (pictures.length > 20) await send(env, chatId, 'Показаны первые 20 изображений. Все объекты перечислены выше.');
+  return send(env, chatId, header, rows);
+}
+async function sendMovePicker(env, chatId, state, from, page = 0) {
+  const count = state.draft.length;
+  const maxPage = Math.max(0, Math.ceil(count / PAGE_SIZE) - 1);
+  if (!state.draft[from - 1] || page < 0 || page > maxPage) throw new Error('Очередь изменилась. Откройте черновик заново.');
+  const offset = page * PAGE_SIZE;
+  const rows = state.draft.slice(offset, offset + PAGE_SIZE).map((slot, i) => {
+    const target = offset + i + 1;
+    return [{ text: target === from ? `${target}. Текущее место` : `На место ${target} · ${shortName(project([slot]).items[0]?.name || slot.versions[0].name, 24)}`, callback_data: `dst:${from}:${target}:${state.draft_revision}` }];
+  });
+  const nav = [];
+  if (page > 0) nav.push({ text: '←', callback_data: `movep:${from}:${page - 1}:${state.draft_revision}` });
+  if ((page + 1) * PAGE_SIZE < count) nav.push({ text: '→', callback_data: `movep:${from}:${page + 1}:${state.draft_revision}` });
+  if (nav.length) rows.push(nav);
+  rows.push([{ text: '← К объекту', callback_data: `obj:${from}:${state.draft_revision}` }]);
+  return send(env, chatId, `Куда переместить место ${from}? Страница ${page + 1}/${maxPage + 1}.`, rows);
+}
+async function sendInsertPicker(env, chatId, state, page = 0) {
+  const count = state.draft.length + 1;
+  const maxPage = Math.max(0, Math.ceil(count / PAGE_SIZE) - 1);
+  if (page < 0 || page > maxPage) throw new Error('Страница изменилась. Выберите место заново.');
+  const rows = [];
+  for (let position = page * PAGE_SIZE + 1; position <= Math.min(count, (page + 1) * PAGE_SIZE); position++) {
+    const following = state.draft[position - 1];
+    rows.push([{ text: following ? `На место ${position} · перед ${shortName(project([following]).items[0]?.name || following.versions[0].name, 22)}` : `${position}. В конец`, callback_data: `ins:${position}:${state.draft_revision}` }]);
+  }
+  const nav = [];
+  if (page > 0) nav.push({ text: '←', callback_data: `insp:${page - 1}:${state.draft_revision}` });
+  if ((page + 1) * PAGE_SIZE < count) nav.push({ text: '→', callback_data: `insp:${page + 1}:${state.draft_revision}` });
+  if (nav.length) rows.push(nav);
+  rows.push([{ text: 'Отмена', callback_data: 'cancel' }]);
+  return send(env, chatId, `Выберите место для нового баннера · страница ${page + 1}/${maxPage + 1}.`, rows);
 }
 
 async function session(env, id) {
@@ -141,6 +197,7 @@ async function finishImage(env, request, chatId, userId, flow) {
   const state = await load(env);
   let key;
   try {
+    if (flow.baseRevision !== state.draft_revision) throw new Error('Черновик изменился. Начните загрузку заново.');
     key = await getImage(env, flow.fileId);
     const entry = {
       id: crypto.randomUUID(), kind: 'image', name: flow.name,
@@ -148,7 +205,17 @@ async function finishImage(env, request, chatId, userId, flow) {
       durationSeconds: 10, startAt: flow.startAt, endAt: flow.endAt
     };
     const draft = clone(state.draft);
-    if (flow.mode === 'replace') {
+    if (flow.mode === 'replace_version') {
+      const slot = draft[flow.slot - 1];
+      const index = slot?.versions.findIndex(v => v.id === flow.targetVersionId) ?? -1;
+      if (index < 0) throw new Error('Версия баннера больше не существует.');
+      slot.versions[index] = entry;
+    } else if (flow.mode === 'schedule') {
+      if (!flow.startAt || dateMs(flow.startAt) <= Date.now()) throw new Error('Для плановой замены укажите будущую дату начала.');
+      const slot = draft[flow.slot - 1];
+      if (!slot) throw new Error('Место больше не существует.');
+      slot.versions.push(entry);
+    } else if (flow.mode === 'replace') {
       const slot = draft[flow.slot - 1];
       if (!slot) throw new Error('Место больше не существует.');
       if (flow.startAt && dateMs(flow.startAt) > Date.now()) slot.versions.push(entry);
@@ -156,10 +223,13 @@ async function finishImage(env, request, chatId, userId, flow) {
         const replacement = replaceVersion(draft, slot.id, entry);
         draft.splice(0, draft.length, ...replacement);
       }
-    } else draft.push({ id: crypto.randomUUID(), versions: [entry] });
+    } else {
+      if (!Number.isInteger(flow.position) || flow.position < 1 || flow.position > draft.length + 1) throw new Error('Выберите место нового баннера.');
+      draft.splice(flow.position - 1, 0, { id: crypto.randomUUID(), versions: [entry] });
+    }
     await saveDraft(env, state, draft);
     await setSession(env, userId, null);
-    await send(env, chatId, `Готово. Баннер «${flow.name}» добавлен в черновик. В эфире ничего не изменилось.\n\n${fmt(draft)}`, menu);
+    await send(env, chatId, `Готово. Баннер «${flow.name}» сохранён в черновике. В эфире ничего не изменилось.`, [[{ text: 'Открыть объект', callback_data: `obj:${flow.position || flow.slot}:${state.draft_revision + 1}` }], ...menu]);
   } catch (error) {
     if (key) await queueCleanup(env, key);
     throw error;
@@ -188,13 +258,21 @@ async function handleConversation(env, request, message, flow) {
   if (flow.step === 'rename') {
     if (!text || text.length > 120) return send(env, chat.id, 'Напишите название до 120 символов. /cancel — отмена.');
     const state = await load(env);
+    if (flow.baseRevision !== state.draft_revision) throw new Error('Черновик изменился. Откройте объект заново.');
     const draft = clone(state.draft);
     const version = draft[flow.slot - 1]?.versions.find(v => v.id === flow.versionId);
     if (!version) throw new Error('Объект изменился. Откройте список заново.');
     version.name = text;
     await saveDraft(env, state, draft);
     await setSession(env, from.id, null);
-    return send(env, chat.id, `Название обновлено в черновике: ${text}`, menu);
+    await send(env, chat.id, `Название обновлено в черновике: ${text}`);
+    return sendCard(env, chat.id, await load(env), flow.slot);
+  }
+  if (flow.step === 'previewdate') {
+    const at = parseTime(text);
+    if (!at) throw new Error('Укажите дату предпросмотра.');
+    await setSession(env, from.id, null);
+    return send(env, chat.id, `Предпросмотр на выбранную дату: ${previewLink(env, await load(env), request, at)}`, menu);
   }
   if (flow.step === 'photo') {
     const image = message.photo?.at(-1);
@@ -213,15 +291,21 @@ async function handleConversation(env, request, message, flow) {
     return send(env, chat.id, 'Выберите срок или напишите начало: «сейчас», 01.11.2026, 01.11.2026 09:00 (по Москве). Для исправления можно написать «сохранить».', dateChoices);
   }
   if (flow.step === 'start') {
-    flow.startAt = /^сохранить$/i.test(text) && flow.mode === 'replace' ? flow.originalStart : parseTime(text); flow.step = 'end';
+    flow.startAt = /^сохранить$/i.test(text) && ['replace', 'replace_version', 'period'].includes(flow.mode) ? flow.originalStart : parseTime(text); flow.step = 'end';
     await setSession(env, from.id, flow);
     return send(env, chat.id, 'Плановый конец: 31.10.2026 (до конца дня по Москве), дата и время или «-» для бессрочного показа. Для исправления можно написать «сохранить». По окончании объект останется в эфире до замены.');
   }
   if (flow.step === 'end') {
-    flow.endAt = /^сохранить$/i.test(text) && flow.mode === 'replace' ? flow.originalEnd : parseTime(text, true);
+    flow.endAt = /^сохранить$/i.test(text) && ['replace', 'replace_version', 'period'].includes(flow.mode) ? flow.originalEnd : parseTime(text, true);
     if (flow.startAt && flow.endAt && dateMs(flow.endAt) <= dateMs(flow.startAt)) throw new Error('Плановый конец должен быть позже начала.');
-    flow.step = 'confirm';
+    if (flow.mode === 'schedule' && (!flow.startAt || dateMs(flow.startAt) <= Date.now())) throw new Error('Для плановой замены выберите будущую дату начала.');
+    if (flow.mode === 'period' && flow.startAt && dateMs(flow.startAt) > Date.now()) {
+      const state = await load(env);
+      if (project([state.draft[flow.slot - 1]]).items[0]?.id === flow.versionId) throw new Error('Действующий объект нельзя переносить в будущее. Используйте «Запланировать замену».');
+    }
+    flow.step = flow.mode === 'add' ? 'position' : 'confirm';
     await setSession(env, from.id, flow);
+    if (flow.mode === 'add') return sendInsertPicker(env, chat.id, await load(env));
     if (flow.mode === 'period') return send(env, chat.id, `Место ${flow.slot}\nНачало: ${flow.startAt || 'без даты'}\nПлановый конец: ${flow.endAt || 'бессрочно'}\nСохранить срок в черновик?`, [[{ text: 'Сохранить срок', callback_data: 'saveperiod' }, { text: 'Отмена', callback_data: 'cancel' }]]);
     return send(env, chat.id, `Проверьте: «${flow.name}»\nНачало: ${flow.startAt || 'сейчас'}\nПлановый конец: ${flow.endAt || 'бессрочно'}\nМесто: ${flow.mode === 'add' ? 'в конец очереди' : flow.slot}\nИзменится только черновик.`, [[{ text: 'Сохранить в черновик', callback_data: 'saveimage' }, { text: 'Отмена', callback_data: 'cancel' }]]);
   }
@@ -237,7 +321,7 @@ async function handleCommand(env, request, message, command) {
   if (cmd === '/start' || cmd === '/help') return send(env, chat.id, 'Управление эфиром. Все правки сначала попадают в черновик.\n/add — добавить баннер\n/replace N — заменить баннер в месте N, можно назначить будущую дату\n/move ОТ КУДА — переместить любой объект\n/remove N — убрать место из черновика\n/rename N НАЗВАНИЕ — изменить название\n/period N — изменить сроки\n/addvideo имя.mp4 — добавить уже размещённый ролик\n/draft, /live, /preview, /publish\n/discard — отменить весь черновик\n/rotatepreview — отозвать ссылку предпросмотра', menu);
   if (cmd === '/draft' || cmd === 'draft') return sendList(env, chat.id, state.draft, 'ЧЕРНОВИК', state.draft_revision, true);
   if (cmd === '/live' || cmd === 'live') return sendList(env, chat.id, state.published, 'В ЭФИРЕ', state.published_revision);
-  if (cmd === '/preview' || cmd === 'preview') return send(env, chat.id, `Предпросмотр черновика: ${previewLink(env, state, request)}\nЧтобы увидеть запланированный будущий набор, добавьте &at=2026-11-01T00%3A00%3A00%2B03%3A00. Ссылка доступна любому, у кого она есть; после публикации будет создана новая.`);
+  if (cmd === '/preview' || cmd === 'preview') return send(env, chat.id, 'Когда показать черновик? Ссылка доступна любому, у кого она есть; она не меняет эфир.', [[{ text: 'Сейчас', callback_data: 'pv:now' }, { text: 'Начало следующего месяца', callback_data: 'pv:next' }], [{ text: 'Указать дату', callback_data: 'pv:custom' }, { text: 'Назад', callback_data: 'draft' }]]);
   if (cmd === '/rotatepreview') {
     const nextToken = token();
     const result = await env.DB.prepare('UPDATE app_state SET preview_token=? WHERE id=1 AND draft_revision=?').bind(nextToken, state.draft_revision).run();
@@ -251,13 +335,15 @@ async function handleCommand(env, request, message, command) {
       if (!Number.isInteger(slot) || !state.draft[slot - 1] || project([state.draft[slot - 1]]).items[0]?.kind !== 'image') throw new Error('Укажите номер места с баннером: /replace N');
     }
     const active = slot ? project([state.draft[slot - 1]]).items[0] : null;
-    await setSession(env, from.id, { mode: slot ? 'replace' : 'add', slot, step: 'photo', originalStart: active?.validFrom || null, originalEnd: active?.validUntil || null });
+    await setSession(env, from.id, { mode: slot ? 'replace' : 'add', slot, step: 'photo', baseRevision: state.draft_revision, originalStart: active?.validFrom || null, originalEnd: active?.validUntil || null });
     return send(env, chat.id, 'Пришлите изображение баннера (фото или файл). /cancel — отмена.');
   }
   if (cmd === '/move') {
-    const draft = moveSlot(state.draft, Number(parts[1]), Number(parts[2]));
+    const destination = Number(parts[2]);
+    const draft = moveSlot(state.draft, Number(parts[1]), destination);
     await saveDraft(env, state, draft);
-    return send(env, chat.id, `Порядок изменён только в черновике:\n${fmt(draft)}`, menu);
+    await send(env, chat.id, 'Порядок изменён только в черновике.');
+    return sendCard(env, chat.id, await load(env), destination);
   }
   if (cmd === '/remove') {
     const n = Number(parts[1]);
@@ -281,15 +367,17 @@ async function handleCommand(env, request, message, command) {
     const current = project([state.draft[n - 1]]).items[0];
     if (!current) throw new Error('Объект ещё не начал показ. Используйте замену с новой датой.');
     if (parts.length === 2) {
-      await setSession(env, from.id, { mode: 'period', slot: n, versionId: current.id, step: 'start' });
-      return send(env, chat.id, `Место ${n}. Текущий срок: ${current.validFrom || 'без даты'} — ${current.validUntil || 'бессрочно'}. Выберите срок или укажите новое начало: дата 01.11.2026, «сейчас» или «-».`, dateChoices);
+      await setSession(env, from.id, { mode: 'period', slot: n, versionId: current.id, step: 'start', baseRevision: state.draft_revision, originalStart: current.validFrom, originalEnd: current.validUntil });
+      return send(env, chat.id, `Место ${n}. Текущий срок: ${current.validFrom || 'без даты'} — ${current.validUntil || 'бессрочно'}. Выберите срок или укажите новое начало. «сохранить» оставит прежнее начало.`, dateChoices);
     }
     const draft = clone(state.draft);
     const version = draft[n - 1].versions.find(v => v.id === current.id);
     version.startAt = parseTime(parts[2]);
     version.endAt = parseTime(parts[3], true);
+    if (version.startAt && dateMs(version.startAt) > Date.now()) throw new Error('Нельзя переносить начало действующего объекта в будущее. Используйте «Запланировать замену».');
     await saveDraft(env, state, draft);
-    return send(env, chat.id, `Сроки обновлены в черновике.\n${fmt(draft)}`, menu);
+    await send(env, chat.id, 'Сроки обновлены в черновике.');
+    return sendCard(env, chat.id, await load(env), n);
   }
   if (cmd === '/addvideo') {
     const name = parts[1];
@@ -303,7 +391,7 @@ async function handleCommand(env, request, message, command) {
     await saveDraft(env, state, draft);
     return send(env, chat.id, `Ролик ${name} добавлен в конец черновика.`, menu);
   }
-  if (cmd === '/publish' || cmd === 'publish') return send(env, chat.id, `Опубликовать весь черновик #${state.draft_revision}?\n${fmt(state.draft)}`, [[{ text: 'Опубликовать весь набор', callback_data: `pub:${state.draft_revision}` }, { text: 'Отмена', callback_data: 'cancel' }]]);
+  if (cmd === '/publish' || cmd === 'publish') return send(env, chat.id, `Проверка перед публикацией: черновик #${state.draft_revision}, ${state.draft.length} объектов.\n${state.draft.slice(0, 20).map(slotLabel).join('\n')}${state.draft.length > 20 ? `\n… ещё ${state.draft.length - 20}` : ''}\n\nПредпросмотр: ${previewLink(env, state, request)}\nОпубликовать весь набор?`, [[{ text: 'Открыть предпросмотр', url: previewLink(env, state, request) }], [{ text: 'Да, опубликовать', callback_data: `pub:${state.draft_revision}` }, { text: 'Отмена', callback_data: 'cancel' }]]);
   if (cmd === '/discard') return send(env, chat.id, 'Отменить все изменения черновика и вернуть опубликованный набор?', [[{ text: 'Сбросить черновик', callback_data: `discard:${state.draft_revision}` }, { text: 'Отмена', callback_data: 'cancel' }]]);
   return send(env, chat.id, 'Неизвестная команда. /help — список действий.', menu);
 }
@@ -315,8 +403,105 @@ async function handleUpdate(env, request, update) {
   if (!message || !user || !allowed(env, user.id) || message.chat.type !== 'private') return;
   const text = (message.text || '').trim();
   try {
-    if (call) await telegram(env, 'answerCallbackQuery', { callback_query_id: call.id });
+    if (call) {
+      await telegram(env, 'answerCallbackQuery', { callback_query_id: call.id });
+      if (message.message_id) {
+        try { await telegram(env, 'editMessageReplyMarkup', { chat_id: message.chat.id, message_id: message.message_id, reply_markup: { inline_keyboard: [] } }); }
+        catch { /* Удаление старой клавиатуры необязательно; ревизии всё равно проверяются. */ }
+      }
+    }
     if (call?.data === 'cancel' || text === '/cancel') return handleCommand(env, request, { ...message, from: user }, '/cancel');
+    if (call?.data?.startsWith('pv:')) {
+      const state = await load(env);
+      if (call.data === 'pv:custom') {
+        await setSession(env, user.id, { mode: 'preview', step: 'previewdate' });
+        return send(env, message.chat.id, 'Укажите дату для предпросмотра: например 01.11.2026 или 01.11.2026 12:00 по Москве.');
+      }
+      const at = call.data === 'pv:next' ? monthRange('next').startAt : null;
+      return send(env, message.chat.id, `Ссылка на демонстрацию черновика${at ? ' на начало следующего месяца' : ' сейчас'}: ${previewLink(env, state, request, at)}`, menu);
+    }
+    if (/^pick:\d+:\d+$/.test(call?.data || '')) {
+      const [, page, revision] = call.data.split(':').map(Number);
+      const state = await load(env);
+      if (state.draft_revision !== revision) throw new Error('Список изменился. Откройте черновик заново.');
+      return sendPicker(env, message.chat.id, state, page);
+    }
+    if (/^(obj|ver):\d+(?::\d+)?:\d+$/.test(call?.data || '')) {
+      const parts = call.data.split(':');
+      const state = await load(env);
+      const revision = Number(parts.at(-1));
+      if (state.draft_revision !== revision) throw new Error('Список изменился. Откройте черновик заново.');
+      return sendCard(env, message.chat.id, state, Number(parts[1]), parts[0] === 'ver' ? Number(parts[2]) : null);
+    }
+    if (/^movep:\d+:\d+:\d+$/.test(call?.data || '')) {
+      const [, from, page, revision] = call.data.split(':').map(Number);
+      const state = await load(env);
+      if (state.draft_revision !== revision) throw new Error('Очередь изменилась. Откройте черновик заново.');
+      return sendMovePicker(env, message.chat.id, state, from, page);
+    }
+    if (/^dst:\d+:\d+:\d+$/.test(call?.data || '')) {
+      const [, from, to, revision] = call.data.split(':').map(Number);
+      const state = await load(env);
+      if (state.draft_revision !== revision) throw new Error('Очередь изменилась. Откройте черновик заново.');
+      if (from === to) return sendCard(env, message.chat.id, state, to);
+      const draft = moveSlot(state.draft, from, to);
+      await saveDraft(env, state, draft);
+      return sendCard(env, message.chat.id, await load(env), to);
+    }
+    if (/^(delv|rmv|renv|perv|repv):\d+:\d+:\d+$/.test(call?.data || '')) {
+      const [action, nText, iText, rText] = call.data.split(':');
+      const position = Number(nText), index = Number(iText), revision = Number(rText);
+      const state = await load(env);
+      if (state.draft_revision !== revision) throw new Error('Объект изменился. Откройте черновик заново.');
+      const slot = state.draft[position - 1], version = slot?.versions[index];
+      if (!version) throw new Error('Версия больше не существует. Откройте черновик заново.');
+      if (action === 'delv') {
+        const current = project([slot]).items[0];
+        const gap = current?.id === version.id && slot.versions.some(v => v.startAt && dateMs(v.startAt) > Date.now()) ? ' До начала следующей версии место не будет показываться.' : '';
+        const warning = slot.versions.length === 1 ? 'Это уберёт всё место из черновика.' : `Это удалит только выбранную версию; место и остальные версии останутся.${gap}`;
+        return send(env, message.chat.id, `Удалить «${version.name}»? ${warning} В эфире ничего не изменится до публикации.`, [[{ text: 'Да, удалить из черновика', callback_data: `rmv:${position}:${index}:${revision}` }], [{ text: 'Отмена', callback_data: `ver:${position}:${index}:${revision}` }]]);
+      }
+      if (action === 'rmv') {
+        const draft = clone(state.draft);
+        draft[position - 1].versions.splice(index, 1);
+        if (!draft[position - 1].versions.length) draft.splice(position - 1, 1);
+        await saveDraft(env, state, draft);
+        await send(env, message.chat.id, `«${version.name}» удалён из черновика. Эфир пока не менялся.`);
+        const fresh = await load(env);
+        return fresh.draft[position - 1] ? sendCard(env, message.chat.id, fresh, position) : sendList(env, message.chat.id, fresh.draft, 'ЧЕРНОВИК', fresh.draft_revision, true);
+      }
+      if (action === 'renv') {
+        await setSession(env, user.id, { mode: 'rename', step: 'rename', slot: position, versionId: version.id, baseRevision: revision });
+        return send(env, message.chat.id, `Новое название для «${version.name}»: `);
+      }
+      if (action === 'perv') {
+        await setSession(env, user.id, { mode: 'period', slot: position, versionId: version.id, step: 'start', baseRevision: revision, originalStart: version.startAt || null, originalEnd: version.endAt || null });
+        return send(env, message.chat.id, `Новый срок для «${version.name}». Выберите месяц или свои даты. Для изменения только конца периода напишите «сохранить» на шаге начала.`, dateChoices);
+      }
+      await setSession(env, user.id, { mode: 'replace_version', slot: position, targetVersionId: version.id, baseRevision: revision, step: 'photo', originalStart: version.startAt || null, originalEnd: version.endAt || null });
+      return send(env, message.chat.id, `Пришлите исправленное изображение для «${version.name}». Даты можно сохранить на следующем шаге. /cancel — отмена.`);
+    }
+    if (/^schedule:\d+:\d+$/.test(call?.data || '')) {
+      const [, n, revision] = call.data.split(':').map(Number);
+      const state = await load(env);
+      if (state.draft_revision !== revision || project([state.draft[n - 1]]).items[0]?.kind !== 'image') throw new Error('Баннер изменился. Откройте черновик заново.');
+      await setSession(env, user.id, { mode: 'schedule', slot: n, baseRevision: revision, step: 'photo' });
+      return send(env, message.chat.id, 'Пришлите следующий баннер для этого места. Начало показа выберите в будущем. /cancel — отмена.');
+    }
+    if (/^insp:\d+:\d+$/.test(call?.data || '')) {
+      const [, page, revision] = call.data.split(':').map(Number);
+      const state = await load(env), flow = await session(env, user.id);
+      if (!flow || flow.mode !== 'add' || flow.step !== 'position' || flow.baseRevision !== revision || state.draft_revision !== revision) throw new Error('Черновик изменился. Начните добавление заново.');
+      return sendInsertPicker(env, message.chat.id, state, page);
+    }
+    if (/^ins:\d+:\d+$/.test(call?.data || '')) {
+      const [, position, revision] = call.data.split(':').map(Number);
+      const state = await load(env), flow = await session(env, user.id);
+      if (!flow || flow.mode !== 'add' || flow.step !== 'position' || flow.baseRevision !== revision || state.draft_revision !== revision || position < 1 || position > state.draft.length + 1) throw new Error('Черновик изменился. Начните добавление заново.');
+      flow.position = position; flow.step = 'confirm';
+      await setSession(env, user.id, flow);
+      return send(env, message.chat.id, `Новый баннер «${flow.name}» займёт место ${position}.\nНачало: ${flow.startAt || 'сейчас'}\nПлановый конец: ${flow.endAt || 'бессрочно'}\nСохранить в черновик?`, [[{ text: 'Сохранить', callback_data: 'saveimage' }, { text: 'Отмена', callback_data: 'cancel' }]]);
+    }
     if (call?.data === 'saveimage') {
       const flow = await session(env, user.id);
       if (!flow || flow.step !== 'confirm') throw new Error('Черновик загрузки не найден. Начните снова.');
@@ -330,8 +515,14 @@ async function handleUpdate(env, request, update) {
     if (call?.data?.startsWith('month:')) {
       const flow = await session(env, user.id);
       if (!flow || flow.step !== 'start') throw new Error('Сначала выберите баннер или объект.');
-      Object.assign(flow, monthRange(call.data.slice(6)), { step: 'confirm' });
+      Object.assign(flow, monthRange(call.data.slice(6)), { step: flow.mode === 'add' ? 'position' : 'confirm' });
+      if (flow.mode === 'schedule' && dateMs(flow.startAt) <= Date.now()) throw new Error('Для плановой замены выберите следующий месяц или свою будущую дату.');
+      if (flow.mode === 'period' && flow.startAt && dateMs(flow.startAt) > Date.now()) {
+        const state = await load(env);
+        if (project([state.draft[flow.slot - 1]]).items[0]?.id === flow.versionId) throw new Error('Действующий объект нельзя переносить в будущее. Используйте «Запланировать замену».');
+      }
       await setSession(env, user.id, flow);
+      if (flow.mode === 'add') return sendInsertPicker(env, message.chat.id, await load(env));
       const action = flow.mode === 'period' ? 'saveperiod' : 'saveimage';
       return send(env, message.chat.id, `${flow.mode === 'period' ? `Место ${flow.slot}` : `Баннер «${flow.name}»`}\nНачало: ${flow.startAt}\nПлановый конец: ${flow.endAt || 'бессрочно'}\nСохранить в черновик?`, [[{ text: 'Сохранить', callback_data: action }, { text: 'Отмена', callback_data: 'cancel' }]]);
     }
@@ -339,14 +530,18 @@ async function handleUpdate(env, request, update) {
       const flow = await session(env, user.id);
       if (!flow || flow.mode !== 'period' || flow.step !== 'confirm') throw new Error('Изменение срока не найдено. Начните снова.');
       const state = await load(env);
+      if (flow.baseRevision !== state.draft_revision) throw new Error('Черновик изменился. Откройте объект заново.');
       const draft = clone(state.draft);
       const version = draft[flow.slot - 1]?.versions.find(v => v.id === flow.versionId);
       if (!version) throw new Error('Объект изменился. Проверьте список.');
+      const current = project([state.draft[flow.slot - 1]]).items[0];
+      if (current?.id === version.id && flow.startAt && dateMs(flow.startAt) > Date.now()) throw new Error('Нельзя переносить начало действующего объекта в будущее: он исчезнет из эфира. Используйте «Запланировать замену».');
       version.startAt = flow.startAt;
       version.endAt = flow.endAt;
       await saveDraft(env, state, draft);
       await setSession(env, user.id, null);
-      return send(env, message.chat.id, `Срок обновлён в черновике.\n${fmt(draft)}`, menu);
+      await send(env, message.chat.id, 'Срок обновлён в черновике.');
+      return sendCard(env, message.chat.id, await load(env), flow.slot);
     }
     if (call?.data?.startsWith('discard:')) {
       const state = await load(env);
@@ -362,7 +557,7 @@ async function handleUpdate(env, request, update) {
       if (action === 'rename') {
         const current = project([state.draft[n - 1]]).items[0];
         if (!current) throw new Error('Объект ещё не начал показ.');
-        await setSession(env, user.id, { mode: 'rename', step: 'rename', slot: n, versionId: current.id });
+        await setSession(env, user.id, { mode: 'rename', step: 'rename', slot: n, versionId: current.id, baseRevision: Number(revisionText) });
         return send(env, message.chat.id, `Новое название для места ${n} «${current.name}»: `);
       }
       if (action === 'replace' || action === 'period' || action === 'remove') return handleCommand(env, request, { ...message, from: user }, `/${action} ${n}`);
@@ -378,7 +573,8 @@ async function handleUpdate(env, request, update) {
       const draft = clone(state.draft);
       draft.splice(Number(nText) - 1, 1);
       await saveDraft(env, state, draft);
-      return send(env, message.chat.id, `Убрано из черновика. В эфире пока без изменений.\n${fmt(draft)}`, menu);
+      await send(env, message.chat.id, 'Убрано из черновика. В эфире пока без изменений.');
+      return sendList(env, message.chat.id, draft, 'ЧЕРНОВИК', state.draft_revision + 1, true);
     }
     if (call?.data?.startsWith('pub:')) {
       const state = await load(env);
@@ -425,21 +621,28 @@ async function cronCleanup(env) {
     }
   }
   const used = referencedAssets(state.draft, state.published);
-  // Реестр всех загрузок закрывает случай сбоя между публикацией и постановкой очистки в очередь.
-  const assetRows = await env.DB.prepare('SELECT asset_key,orphaned_at FROM assets LIMIT 1000').all();
-  for (const row of assetRows.results || []) {
-    if (used.has(row.asset_key)) {
-      if (row.orphaned_at) await env.DB.prepare('UPDATE assets SET orphaned_at=NULL WHERE asset_key=?').bind(row.asset_key).run();
-    } else if (!row.orphaned_at) {
-      await env.DB.prepare('UPDATE assets SET orphaned_at=? WHERE asset_key=?').bind(new Date().toISOString(), row.asset_key).run();
-    } else if (dateMs(row.orphaned_at) + RETAIN_MS <= Date.now()) {
-      const fresh = await load(env);
-      if (!referencedAssets(fresh.draft, fresh.published).has(row.asset_key)) {
-        await env.BANNERS.delete(row.asset_key);
-        await env.DB.prepare('DELETE FROM assets WHERE asset_key=?').bind(row.asset_key).run();
-        await env.DB.prepare('DELETE FROM asset_cleanup WHERE asset_key=?').bind(row.asset_key).run();
+  // Ключевая пагинация позволяет проверить все файлы, даже после первых 1000.
+  let cursor = '';
+  for (;;) {
+    const assetRows = await env.DB.prepare('SELECT asset_key,orphaned_at FROM assets WHERE asset_key > ? ORDER BY asset_key LIMIT 1000').bind(cursor).all();
+    const batch = assetRows.results || [];
+    if (!batch.length) break;
+    for (const row of batch) {
+      if (used.has(row.asset_key)) {
+        if (row.orphaned_at) await env.DB.prepare('UPDATE assets SET orphaned_at=NULL WHERE asset_key=?').bind(row.asset_key).run();
+      } else if (!row.orphaned_at) {
+        await env.DB.prepare('UPDATE assets SET orphaned_at=? WHERE asset_key=?').bind(new Date().toISOString(), row.asset_key).run();
+      } else if (dateMs(row.orphaned_at) + RETAIN_MS <= Date.now()) {
+        const fresh = await load(env);
+        if (!referencedAssets(fresh.draft, fresh.published).has(row.asset_key)) {
+          await env.BANNERS.delete(row.asset_key);
+          await env.DB.prepare('DELETE FROM assets WHERE asset_key=?').bind(row.asset_key).run();
+          await env.DB.prepare('DELETE FROM asset_cleanup WHERE asset_key=?').bind(row.asset_key).run();
+        }
       }
     }
+    cursor = batch.at(-1).asset_key;
+    if (batch.length < 1000) break;
   }
   const rows = await env.DB.prepare('SELECT asset_key FROM asset_cleanup WHERE not_before <= ? LIMIT 100').bind(new Date().toISOString()).all();
   for (const { asset_key: key } of rows.results || []) {
@@ -495,10 +698,17 @@ export default {
         if (!Number.isInteger(update.update_id)) return new Response('Bad Request', { status: 400 });
         const claim = await env.DB.prepare('INSERT OR IGNORE INTO telegram_updates(update_id,received_at) VALUES (?,?)').bind(update.update_id, new Date().toISOString()).run();
         if (claim.meta.changes !== 1) return new Response('OK');
+        // Запись update_id остаётся даже при сбое ответа Telegram после изменения D1.
+        // Повтор доставки не должен повторно применить публикацию или перемещение.
         try { await handleUpdate(env, request, update); }
         catch (error) {
-          await env.DB.prepare('DELETE FROM telegram_updates WHERE update_id=?').bind(update.update_id).run();
-          throw error;
+          const staleDraft = typeof error?.message === 'string' && error.message.startsWith('Черновик изменился');
+          if (!staleDraft) console.error('Telegram update failed', error?.name || 'Error');
+          const chatId = update.callback_query?.message?.chat?.id || update.message?.chat?.id;
+          if (chatId) {
+            try { await send(env, chatId, staleDraft ? `Ошибка: ${error.message}` : 'Ошибка обработки. Откройте черновик и повторите действие.'); }
+            catch { /* Не повторяем потенциально уже применённую мутацию. */ }
+          }
         }
         return new Response('OK');
       }

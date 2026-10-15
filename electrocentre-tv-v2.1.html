@@ -1109,6 +1109,7 @@ let pendingPlaylistKey = null;
 let playlistRequestInFlight = false;
 let playlistPollQueued = false;
 let nextChangeTimer = null;
+const publishedCacheKey = 'electrocentre-tv-published-playlist-v1';
 
 function queryValue(name){
   const match = new RegExp('(?:^|&)' + name + '=([^&]*)').exec(window.location.search.slice(1));
@@ -1177,7 +1178,7 @@ function validatePlaylist(data){
   return JSON.stringify(data.items);
 }
 
-function preloadPlaylistMedia(items){
+function preloadPlaylistMedia(items, skipVideoChecks){
   const images = items.filter(function(item){ return item.kind === 'image'; }).map(function(item){
     return new Promise(function(resolve, reject){
       const img = new Image();
@@ -1187,12 +1188,36 @@ function preloadPlaylistMedia(items){
       img.src = item.src;
     });
   });
-  const videos = items.filter(function(item){ return item.kind === 'video'; }).map(function(item){
+  const videos = (skipVideoChecks ? [] : items.filter(function(item){ return item.kind === 'video'; })).map(function(item){
     return fetch(item.src, {method:'HEAD', cache:'no-store'}).then(function(response){
       if (!response.ok) throw new Error('Ролик недоступен: ' + item.name);
     });
   });
   return Promise.all(images.concat(videos));
+}
+
+function restorePublishedPlaylist(){
+  if (previewToken || !playlistApiBase) return;
+  let cached, key;
+  try {
+    cached = JSON.parse(window.localStorage.getItem(publishedCacheKey));
+    if (!cached || cached.apiBase !== playlistApiBase) return;
+    key = validatePlaylist(cached);
+  } catch(e){ return; }
+  // Ролики проекта лежат локально; проверяем изображения, прежде чем брать сохранённый список.
+  preloadPlaylistMedia(cached.items, true).then(function(){
+    if (!activePlaylistKey && !pendingPlaylist){
+      pendingPlaylist = cached;
+      pendingPlaylistKey = key;
+    }
+  }).catch(function(error){ console.warn('[Эфир] Сохранённый список недоступен:', error); });
+}
+
+function rememberPublishedPlaylist(data){
+  if (previewToken) return;
+  try {
+    window.localStorage.setItem(publishedCacheKey, JSON.stringify({apiBase:playlistApiBase, revision:data.revision, items:data.items}));
+  } catch(e){ console.warn('[Эфир] Не удалось сохранить список:', e); }
 }
 
 function renderPlaylist(items){
@@ -1254,23 +1279,34 @@ function pollPlaylist(){
     ? '/api/preview/' + encodeURIComponent(previewToken) + (previewAt ? '?at=' + encodeURIComponent(previewAt) : '')
     : '/api/published';
   playlistRequestInFlight = true;
-  fetch(playlistApiBase + endpoint, {cache:'no-store', referrerPolicy:'no-referrer'})
+  const request = fetch(playlistApiBase + endpoint, {cache:'no-store', referrerPolicy:'no-referrer'})
     .then(function(response){ if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
     .then(function(data){
       const key = validatePlaylist(data);
-      scheduleNextChange(data.nextChangeAt, data.generatedAt);
-      if (key === activePlaylistKey || key === pendingPlaylistKey) return;
+      if (key === activePlaylistKey || key === pendingPlaylistKey) return {data:data, key:key};
       return preloadPlaylistMedia(data.items).then(function(){
-        pendingPlaylist = data;
-        pendingPlaylistKey = key;
-        if (previewToken) showPlaylistNotice('ПРЕДПРОСМОТР ЧЕРНОВИКА — готово к переключению', false);
+        return {data:data, key:key};
       });
+    });
+  let timeoutId;
+  const timeout = new Promise(function(resolve, reject){
+    timeoutId = setTimeout(function(){ reject(new Error('Превышено время ожидания API или медиа')); }, 25000);
+  });
+  Promise.race([request, timeout])
+    .then(function(result){
+      scheduleNextChange(result.data.nextChangeAt, result.data.generatedAt);
+      if (result.key === activePlaylistKey || result.key === pendingPlaylistKey) return;
+      pendingPlaylist = result.data;
+      pendingPlaylistKey = result.key;
+      rememberPublishedPlaylist(result.data);
+      if (previewToken) showPlaylistNotice('ПРЕДПРОСМОТР ЧЕРНОВИКА — готово к переключению', false);
     })
     .catch(function(error){
       console.warn('[Эфир] Список не обновлён:', error);
       if (previewToken && !activePlaylistKey) showPlaylistNotice('ЧЕРНОВИК НЕДОСТУПЕН — ' + error.message, true);
     })
     .then(function(){
+      clearTimeout(timeoutId);
       playlistRequestInFlight = false;
       if (playlistPollQueued){
         playlistPollQueued = false;
@@ -1552,6 +1588,7 @@ requestAnimationFrame(()=>{
 if (slides[0].classList.contains('s-card')) startCardAnim(slides[0]);
 if (slides[0].classList.contains('s-bonus')) startBonusAnim(slides[0]);
 startProg();
+restorePublishedPlaylist();
 pollPlaylist();
 if (playlistApiBase) setInterval(pollPlaylist, 30000);
 
