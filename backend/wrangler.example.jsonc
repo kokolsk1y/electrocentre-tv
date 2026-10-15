@@ -8,6 +8,6 @@
   "triggers": { "crons": ["0 */6 * * *"] },
   "vars": {
     "TV_PAGE_URL": "https://kokolsk1y.github.io/electrocentre-tv/electrocentre-tv-v2.1.html",
-    "ALLOWED_TELEGRAM_IDS": "REPLACE_WITH_COMMA_SEPARATED_NUMERIC_IDS"
+    "DEMO_HTML_URL": "https://raw.githubusercontent.com/kokolsk1y/electrocentre-tv/codex/banner-bot/electrocentre-tv-v2.1.html"
   }
 }

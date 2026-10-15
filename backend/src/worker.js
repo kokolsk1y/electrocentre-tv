@@ -8,7 +8,7 @@ const token = () => [...crypto.getRandomValues(new Uint8Array(32))].map(n => n.t
 const clone = value => structuredClone(value);
 const apiBase = request => new URL(request.url).origin;
 const previewLink = (env, state, request) => {
-  const url = new URL(env.TV_PAGE_URL);
+  const url = new URL('/demo', apiBase(request));
   url.searchParams.set('preview', state.preview_token);
   url.searchParams.set('api', apiBase(request));
   return url.href;
@@ -68,7 +68,9 @@ async function telegram(env, method, body) {
   return payload.result;
 }
 const send = (env, chatId, text, keyboard) => telegram(env, 'sendMessage', { chat_id: chatId, text, ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}) });
-const allowed = (env, id) => (env.ALLOWED_TELEGRAM_IDS || '').split(',').map(s => s.trim()).includes(String(id));
+// Пустой список означает открытый доступ через личный чат с ботом.
+const allowed = (env, id) => !String(env.ALLOWED_TELEGRAM_IDS || '').trim() ||
+  String(env.ALLOWED_TELEGRAM_IDS).split(',').map(s => s.trim()).includes(String(id));
 const menu = [[{ text: '📋 Черновик', callback_data: 'draft' }, { text: '📺 В эфире', callback_data: 'live' }], [{ text: '➕ Баннер', callback_data: 'add' }, { text: '🔗 Предпросмотр', callback_data: 'preview' }], [{ text: '✅ Опубликовать', callback_data: 'publish' }]];
 const dateChoices = [[{ text: 'Этот месяц', callback_data: 'month:current' }, { text: 'Следующий месяц', callback_data: 'month:next' }], [{ text: 'Бессрочно', callback_data: 'month:forever' }, { text: 'Свои даты', callback_data: 'customdates' }]];
 function monthRange(which) {
@@ -457,6 +459,19 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204, headers: { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } }), env, request);
     try {
+      if (request.method === 'GET' && url.pathname === '/demo') {
+        const source = env.DEMO_HTML_URL;
+        if (!source || !/^https:\/\/raw\.githubusercontent\.com\//.test(source)) return new Response('Demo source is not configured', { status: 503 });
+        const upstream = await fetch(source, { headers: { Accept: 'text/html' } });
+        if (!upstream.ok) return new Response('Demo source is unavailable', { status: 503 });
+        const html = await upstream.text();
+        if (!/<head>/i.test(html)) return new Response('Demo source is invalid', { status: 503 });
+        const base = new URL('.', env.TV_PAGE_URL).href;
+        return new Response(html.replace(/<head>/i, `<head><base href="${base}">`), { headers: {
+          'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+          'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff'
+        } });
+      }
       if (request.method === 'GET' && url.pathname === '/api/published') {
         const state = await load(env);
         return cors(json(project(state.published, url.searchParams.get('at') || new Date(), state.published_revision, false)), env, request);

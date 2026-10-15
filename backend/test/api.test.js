@@ -9,6 +9,26 @@ function env() {
   return { TV_ORIGIN: 'https://kokolsk1y.github.io', DB: { prepare(sql) { assert.match(sql, /^SELECT \*/); return { async first() { return row; } }; } } };
 }
 
+test('демонстрация берёт TV-код из GitHub, а медиа с Pages', async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl;
+  globalThis.fetch = async (url) => {
+    requestedUrl = String(url);
+    return new Response('<html><head><title>TV</title></head><body>preview</body></html>');
+  };
+  try {
+    const bindings = {
+      DEMO_HTML_URL: 'https://raw.githubusercontent.com/kokolsk1y/electrocentre-tv/codex/banner-bot/electrocentre-tv-v2.1.html',
+      TV_PAGE_URL: 'https://kokolsk1y.github.io/electrocentre-tv/electrocentre-tv-v2.1.html'
+    };
+    const response = await worker.fetch(new Request('https://worker.example/demo?preview=private-token'), bindings);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');
+    assert.match(await response.text(), /<base href="https:\/\/kokolsk1y\.github\.io\/electrocentre-tv\/">/);
+    assert.equal(requestedUrl, bindings.DEMO_HTML_URL);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('эфир и черновик раздельны, предпросмотр требует токен', async () => {
   const bindings = env();
   const opts = { headers: { Origin: bindings.TV_ORIGIN } };
