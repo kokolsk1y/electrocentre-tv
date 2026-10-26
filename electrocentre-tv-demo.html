@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЭлектроЦентр — DEMO TG Слайды</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+#wrap {
+  width: 1920px; height: 1080px;
+  position: absolute; top: 0; left: 0;
+  transform-origin: top left;
+  font-family: 'Montserrat', sans-serif;
+  background: #0E1621;
+  overflow: hidden;
+  cursor: none;
+  user-select: none;
+}
+
+/* ══ SLIDES ══ */
+.slide {
+  position: absolute; inset: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+.slide.on { opacity: 1; pointer-events: auto; }
+
+/* ══ TG SLIDE LAYOUT ══ */
+.tg-slide { display: flex; background: #0E1621; }
+
+/* LEFT: media */
+.tg-left {
+  width: 1180px; height: 100%;
+  flex-shrink: 0;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+
+.tg-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: blur(40px) brightness(0.22) saturate(1.4);
+  transform: scale(1.12);
+  display: none; z-index: 0;
+}
+
+.tg-no-icon {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 100px; opacity: 0.12; z-index: 1;
+}
+
+.tg-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: none; z-index: 2;
+}
+
+.tg-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: none; z-index: 2;
+}
+
+.tg-play-btn {
+  position: absolute; inset: 0; z-index: 3;
+  display: none;
+  align-items: center; justify-content: center;
+}
+.tg-play-circle {
+  width: 110px; height: 110px; border-radius: 50%;
+  background: rgba(42,171,238,0.2);
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(42,171,238,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.tg-play-circle::after {
+  content: ''; width: 0; height: 0;
+  border-style: solid;
+  border-width: 22px 0 22px 38px;
+  border-color: transparent transparent transparent #2AABEE;
+  margin-left: 10px;
+}
+
+.tg-type-badge {
+  position: absolute; top: 28px; left: 28px; z-index: 4;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 8px 20px;
+  font-size: 14px; font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* RIGHT: Telegram panel */
+.tg-right {
+  flex: 1; height: 100%;
+  background: #17212B;
+  display: flex; flex-direction: column;
+  border-left: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Channel header */
+.tg-header {
+  padding: 36px 40px 28px;
+  display: flex; align-items: center; gap: 16px;
+  background: #1C2B3A;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.tg-avatar {
+  width: 60px; height: 60px; border-radius: 50%;
+  overflow: hidden; flex-shrink: 0;
+  border: 2px solid rgba(42,171,238,0.5);
+}
+.tg-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tg-ch-info { flex: 1; }
+.tg-ch-name { font-size: 19px; font-weight: 800; color: #fff; }
+.tg-ch-handle { font-size: 13px; color: rgba(255,255,255,0.38); margin-top: 3px; }
+.tg-logo {
+  width: 40px; height: 40px; flex-shrink: 0;
+}
+
+/* Message bubble area */
+.tg-bubble-wrap {
+  flex: 1; padding: 36px 36px 24px;
+  overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+/* Bubble outer — like TG incoming message */
+.tg-bubble-outer {
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.tg-bubble-ava {
+  width: 36px; height: 36px; border-radius: 50%;
+  overflow: hidden; flex-shrink: 0; margin-top: 2px;
+}
+.tg-bubble-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.tg-bubble {
+  background: #182533;
+  border-radius: 4px 16px 16px 16px;
+  padding: 18px 22px 14px;
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+/* bubble pointer */
+.tg-bubble::before {
+  content: '';
+  position: absolute; top: 0; left: -9px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 9px 12px 0;
+  border-color: transparent #182533 transparent transparent;
+}
+
+.tg-bubble-sender {
+  font-size: 13px; font-weight: 800;
+  color: #2AABEE; margin-bottom: 10px;
+}
+.tg-post-date {
+  font-size: 12px; color: rgba(255,255,255,0.35);
+  margin-bottom: 12px;
+}
+.tg-post-title {
+  font-size: 24px; font-weight: 800; color: #fff;
+  line-height: 1.25; margin-bottom: 10px;
+  min-height: 1.25em;
+}
+.tg-post-text {
+  font-size: 17px; font-weight: 400;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.6;
+  min-height: 1.6em;
+  white-space: pre-wrap;
+}
+.tg-read-more {
+  margin-top: 14px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: #2AABEE;
+  opacity: 0;
+}
+.tg-read-more svg { width: 14px; height: 14px; }
+
+/* ══ TYPING INDICATOR ══ */
+.tg-typing-indicator {
+  display: none;
+  align-items: center; gap: 10px;
+  padding: 6px 0 14px;
+  font-size: 13px; color: rgba(255,255,255,0.4);
+  font-style: italic;
+}
+.tg-typing-dots { display: flex; gap: 5px; align-items: center; }
+.tg-typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #2AABEE;
+  animation: tgDot 1.2s infinite ease-in-out;
+}
+.tg-typing-dots span:nth-child(2) { animation-delay: 0.22s; }
+.tg-typing-dots span:nth-child(3) { animation-delay: 0.44s; }
+@keyframes tgDot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ══ HEADER ══ */
+.hdr {
+  position:absolute; top:0; left:0; right:0; height:70px;
+  background:#fff; border-bottom:4px solid #1B3073;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 36px; z-index:200;
+  box-shadow:0 2px 16px rgba(27,48,115,0.1);
+}
+.logo-svg { height:42px; width:auto; }
+.hdr-mid { display:flex; gap:28px; align-items:center; }
+.hpill { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#1B2240; }
+.hpill .ico { font-size:17px; }
+.hpill b { color:#1B3073; font-size:18px; font-weight:800; }
+.hpill .site { color:#E8420A; font-size:20px; font-weight:800; letter-spacing:0.5px; }
+.hpill .hours { font-size:12px; color:rgba(27,34,64,0.5); font-weight:500; }
+.hdr-r { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+.live { display:flex; align-items:center; gap:7px; font-size:10px; font-weight:700; letter-spacing:2px; color:#E8420A; text-transform:uppercase; }
+.live-dot { width:9px; height:9px; border-radius:50%; background:#E8420A; animation:liveblink 1s step-end infinite; }
+@keyframes liveblink { 0%,100%{opacity:1} 50%{opacity:.1} }
+.clk { font-size:21px; font-weight:800; color:#1B3073; letter-spacing:2px; font-variant-numeric:tabular-nums; }
+
+/* ══ STAGE ══ */
+.stage { position:absolute; top:70px; bottom:68px; left:0; right:0; }
+
+/* ══ TICKER ══ */
+.ticker-wrap {
+  position:absolute; bottom:40px; left:0; right:0; height:28px;
+  background:#1B3073; overflow:hidden; z-index:190;
+}
+.ticker-inner {
+  display:inline-flex; align-items:center;
+  animation:ticker 42s linear infinite; white-space:nowrap; height:100%;
+}
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ticker-inner span { font-size:12px; font-weight:600; color:rgba(255,255,255,0.85); padding:0 18px; height:100%; display:flex; align-items:center; }
+.ticker-inner .ts { color:#E8420A; padding:0 4px; font-weight:900; font-size:15px; }
+
+/* ══ BOTTOM BAR ══ */
+.bot {
+  position:absolute; bottom:0; left:0; right:0; height:40px;
+  background:#fff; border-top:2px solid rgba(27,48,115,0.1);
+  display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200;
+}
+.dots-wrap { display:flex; gap:6px; align-items:center; flex:1; justify-content:center; }
+.sdot { height:3px; border-radius:2px; background:rgba(27,48,115,0.15); transition:all .4s; width:18px; cursor:pointer; }
+.sdot.on { background:#1B3073; width:28px; }
+.bot-info { font-size:12px; font-weight:600; color:rgba(27,48,115,0.35); letter-spacing:0.5px; flex-shrink:0; }
+
+/* QR section */
+.tg-qr-section {
+  padding: 28px 36px 40px;
+  background: #1C2B3A;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 30px;
+  flex-shrink: 0;
+}
+.tg-qr-box {
+  background: #fff; border-radius: 14px; padding: 12px;
+  width: 168px; height: 168px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+}
+.tg-qr-box canvas, .tg-qr-box img {
+  width: 144px !important; height: 144px !important; display: block;
+}
+.tg-qr-info { flex: 1; }
+.tg-qr-cta {
+  font-size: 24px; font-weight: 900; color: #fff;
+  line-height: 1.2; margin-bottom: 10px;
+}
+.tg-qr-sub {
+  font-size: 14px; color: rgba(255,255,255,0.45);
+  line-height: 1.5; margin-bottom: 14px;
+}
+.tg-qr-link {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 17px; font-weight: 800; color: #2AABEE;
+}
+</style>
+</head>
+<body>
+<div id="wrap">
+
+<header class="hdr">
+  <div class="logo">
+    <img src="data:image/png;base64,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" class="logo-svg" alt="ЭлектроЦентр">
+  </div>
+  <div class="hdr-mid">
+    <div class="hpill"><span class="ico">📞</span><b>+7 (4012) 55-55-14</b></div>
+    <div class="hpill"><span class="ico">🌐</span><span class="site">stv39.ru</span></div>
+    <div class="hpill"><span class="hours">Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span></div>
+  </div>
+  <div class="hdr-r">
+    <div class="live"><div class="live-dot"></div>В ЭФИРЕ</div>
+    <div class="clk" id="clk">--:--:--</div>
+  </div>
+</header>
+
+<div class="stage">
+
+<!-- ══ SLIDE 1: ФОТО 1 ══ -->
+<div class="slide tg-slide on" id="s1" data-duration="18000">
+  <div class="tg-left">
+    <img class="tg-bg" id="bg1" src="" alt="">
+    <div class="tg-no-icon" id="nm1">📷</div>
+    <img class="tg-photo" id="img1" src="" alt="">
+    <div class="tg-type-badge">📷 Фото</div>
+  </div>
+  <div class="tg-right">
+    <div class="tg-header">
+      <div class="tg-avatar"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+      <div class="tg-ch-info">
+        <div class="tg-ch-name">ЭлектроЦентр</div>
+        <div class="tg-ch-handle">t.me/electrocentre39</div>
+      </div>
+      <svg class="tg-logo" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="20" fill="#2AABEE"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/>
+      </svg>
+    </div>
+    <div class="tg-bubble-wrap">
+      <div class="tg-bubble-outer">
+        <div class="tg-bubble-ava"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+        <div class="tg-bubble">
+          <div class="tg-bubble-sender">ЭлектроЦентр</div>
+          <div class="tg-typing-indicator" id="typing1"><div class="tg-typing-dots"><span></span><span></span><span></span></div>ЭлектроЦентр печатает...</div>
+          <div class="tg-post-date" id="date1">—</div>
+          <div class="tg-post-title" id="title1"></div>
+          <div class="tg-post-text" id="text1"></div>
+          <div class="tg-read-more">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#2AABEE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Читать полностью в Telegram
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tg-qr-section">
+      <div class="tg-qr-box" id="qr1"></div>
+      <div class="tg-qr-info">
+        <div class="tg-qr-cta">Читай нас<br>в Telegram</div>
+        <div class="tg-qr-sub">Наведи камеру на QR-код<br>и подписывайся на канал</div>
+        <div class="tg-qr-link">
+          <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#2AABEE"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/></svg>
+          t.me/electrocentre39
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2: ФОТО 2 ══ -->
+<div class="slide tg-slide" id="s2" data-duration="18000">
+  <div class="tg-left">
+    <img class="tg-bg" id="bg2" src="" alt="">
+    <div class="tg-no-icon" id="nm2">📷</div>
+    <img class="tg-photo" id="img2" src="" alt="">
+    <div class="tg-type-badge">📷 Фото</div>
+  </div>
+  <div class="tg-right">
+    <div class="tg-header">
+      <div class="tg-avatar"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+      <div class="tg-ch-info">
+        <div class="tg-ch-name">ЭлектроЦентр</div>
+        <div class="tg-ch-handle">t.me/electrocentre39</div>
+      </div>
+      <svg class="tg-logo" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="20" fill="#2AABEE"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/>
+      </svg>
+    </div>
+    <div class="tg-bubble-wrap">
+      <div class="tg-bubble-outer">
+        <div class="tg-bubble-ava"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+        <div class="tg-bubble">
+          <div class="tg-bubble-sender">ЭлектроЦентр</div>
+          <div class="tg-typing-indicator" id="typing2"><div class="tg-typing-dots"><span></span><span></span><span></span></div>ЭлектроЦентр печатает...</div>
+          <div class="tg-post-date" id="date2">—</div>
+          <div class="tg-post-title" id="title2"></div>
+          <div class="tg-post-text" id="text2"></div>
+          <div class="tg-read-more">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#2AABEE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Читать полностью в Telegram
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tg-qr-section">
+      <div class="tg-qr-box" id="qr2"></div>
+      <div class="tg-qr-info">
+        <div class="tg-qr-cta">Читай нас<br>в Telegram</div>
+        <div class="tg-qr-sub">Наведи камеру на QR-код<br>и подписывайся на канал</div>
+        <div class="tg-qr-link">
+          <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#2AABEE"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/></svg>
+          t.me/electrocentre39
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 3: ВИДЕО ══ -->
+<div class="slide tg-slide" id="s3" data-duration="20000">
+  <div class="tg-left">
+    <img class="tg-bg" id="bg3" src="" alt="">
+    <div class="tg-no-icon" id="nm3">🎬</div>
+    <video class="tg-video" id="vid3" muted playsinline loop></video>
+    <img class="tg-photo" id="img3" src="" alt="">
+    <div class="tg-play-btn" id="play3"><div class="tg-play-circle"></div></div>
+    <div class="tg-type-badge">🎬 Видео</div>
+  </div>
+  <div class="tg-right">
+    <div class="tg-header">
+      <div class="tg-avatar"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+      <div class="tg-ch-info">
+        <div class="tg-ch-name">ЭлектроЦентр</div>
+        <div class="tg-ch-handle">t.me/electrocentre39</div>
+      </div>
+      <svg class="tg-logo" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="20" fill="#2AABEE"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/>
+      </svg>
+    </div>
+    <div class="tg-bubble-wrap">
+      <div class="tg-bubble-outer">
+        <div class="tg-bubble-ava"><img src="80be5e7b-88ac-4bea-a733-31b25523e79d.jpg" alt="EC"></div>
+        <div class="tg-bubble">
+          <div class="tg-bubble-sender">ЭлектроЦентр</div>
+          <div class="tg-typing-indicator" id="typing3"><div class="tg-typing-dots"><span></span><span></span><span></span></div>ЭлектроЦентр печатает...</div>
+          <div class="tg-post-date" id="date3">—</div>
+          <div class="tg-post-title" id="title3"></div>
+          <div class="tg-post-text" id="text3"></div>
+          <div class="tg-read-more">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#2AABEE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Смотреть полностью в Telegram
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tg-qr-section">
+      <div class="tg-qr-box" id="qr3"></div>
+      <div class="tg-qr-info">
+        <div class="tg-qr-cta">Смотри нас<br>в Telegram</div>
+        <div class="tg-qr-sub">Наведи камеру на QR-код<br>и подписывайся на канал</div>
+        <div class="tg-qr-link">
+          <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#2AABEE"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8.5 19.4L29.7 11.3C30.7 10.9 31.7 11.6 31.4 12.8L27.9 29C27.6 30.2 26.9 30.5 25.9 29.9L20.9 26.2L18.5 28.5C18.2 28.8 17.9 29 17.4 29L17.7 23.9L27.3 15.3C27.7 14.9 27.2 14.7 26.7 15L14.8 22.6L9.8 21.1C8.7 20.7 8.7 20 8.5 19.4Z" fill="white"/></svg>
+          t.me/electrocentre39
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /stage -->
+
+<!-- ══ TICKER ══ -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <span>⚡ stv39.ru — более 20 000 позиций в наличии</span><span class="ts">·</span>
+    <span>🚚 Бесплатная доставка при заказе от 20 000 ₽</span><span class="ts">·</span>
+    <span>🏢 Юридическим лицам — персональный менеджер, НДС, отсрочка платежа</span><span class="ts">·</span>
+    <span>📱 Telegram t.me/electrocentre39 — скидка 5% на первую покупку</span><span class="ts">·</span>
+    <span>📞 +7 (4012) 55-55-14 — консультация специалиста</span><span class="ts">·</span>
+    <span>📍 Большое Исаково, ул. Старокаменная, 35 · Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span><span class="ts">·</span>
+    <span>⚡ stv39.ru — более 20 000 позиций в наличии</span><span class="ts">·</span>
+    <span>🚚 Бесплатная доставка при заказе от 20 000 ₽</span><span class="ts">·</span>
+    <span>🏢 Юридическим лицам — персональный менеджер, НДС, отсрочка платежа</span><span class="ts">·</span>
+    <span>📱 Telegram t.me/electrocentre39 — скидка 5% на первую покупку</span><span class="ts">·</span>
+    <span>📞 +7 (4012) 55-55-14 — консультация специалиста</span><span class="ts">·</span>
+    <span>📍 Большое Исаково, ул. Старокаменная, 35 · Пн–Пт 8:30–17:30 · Сб 9:00–17:00</span><span class="ts">·</span>
+  </div>
+</div>
+
+<!-- ══ BOTTOM BAR ══ -->
+<div class="bot">
+  <div class="dots-wrap" id="dotsWrap"></div>
+  <div class="bot-info">stv39.ru · ЭлектроЦентр · +7 (4012) 55-55-14</div>
+</div>
+
+</div><!-- #wrap -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ══ CLOCK ══ */
+(function tick() {
+  document.getElementById('clk').textContent =
+    new Date().toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  setTimeout(tick, 1000);
+})();
+
+/* ══ QR CODES ══ */
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof QRCode === 'undefined') return;
+  [1, 2, 3].forEach(function(i) {
+    new QRCode(document.getElementById('qr' + i), {
+      text: 'https://t.me/electrocentre39',
+      width: 144, height: 144,
+      colorDark: '#1B3073', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  });
+});
+
+/* ══ TYPEWRITER ══ */
+let _typingCtrl = null;
+
+function cancelTyping() {
+  if (_typingCtrl) { _typingCtrl.cancelled = true; _typingCtrl = null; }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeText(el, text, speed, ctrl) {
+  el.textContent = '';
+  for (let i = 0; i < text.length; i++) {
+    if (ctrl.cancelled) return false;
+    el.textContent += text[i];
+    await sleep(speed);
+  }
+  return true;
+}
+
+async function animateSlide(slideIdx) {
+  const ctrl = { cancelled: false };
+  _typingCtrl = ctrl;
+
+  const titleEl  = document.getElementById('title'  + slideIdx);
+  const textEl   = document.getElementById('text'   + slideIdx);
+  const typingEl = document.getElementById('typing' + slideIdx);
+  const rmEl     = document.querySelector('#s' + slideIdx + ' .tg-read-more');
+
+  if (!titleEl) return false;
+
+  const fullTitle = (titleEl.dataset.full || '').slice(0, 80);
+  const rawText   = textEl ? (textEl.dataset.full || '') : '';
+  const fullText  = rawText.slice(0, 280);
+
+  // Reset
+  titleEl.textContent = '';
+  if (textEl) textEl.textContent = '';
+  if (rmEl) { rmEl.style.transition = 'none'; rmEl.style.opacity = '0'; }
+
+  // Wait a beat, then show typing dots
+  await sleep(300);
+  if (ctrl.cancelled) return false;
+  if (typingEl) typingEl.style.display = 'flex';
+  await sleep(1600);
+  if (ctrl.cancelled) return false;
+  if (typingEl) typingEl.style.display = 'none';
+
+  // Type title (27ms/char)
+  if (!(await typeText(titleEl, fullTitle, 27, ctrl))) return false;
+  await sleep(500);
+  if (ctrl.cancelled) return false;
+
+  // Type body (42ms/char)
+  if (textEl && fullText) {
+    const body = fullText + (rawText.length > 280 ? '...' : '');
+    if (!(await typeText(textEl, body, 42, ctrl))) return false;
+  }
+
+  // Reveal read-more
+  if (rmEl) { rmEl.style.transition = 'opacity 0.6s'; rmEl.style.opacity = '1'; }
+  return true;
+}
+
+/* ══ SLIDESHOW ══ */
+const slides = Array.from(document.querySelectorAll('.slide'));
+let cur = 0, timer = null;
+
+// Build slide dots
+(function() {
+  const w = document.getElementById('dotsWrap');
+  if (!w) return;
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'sdot' + (i === 0 ? ' on' : '');
+    d.onclick = () => goTo(i);
+    w.appendChild(d);
+  });
+})();
+
+function updateDots() {
+  document.querySelectorAll('.sdot').forEach((d, i) => d.classList.toggle('on', i === cur));
+}
+
+function goTo(idx) {
+  cancelTyping();
+  clearTimeout(timer);
+  slides[cur].classList.remove('on');
+  cur = (idx + slides.length) % slides.length;
+  slides[cur].classList.add('on');
+  updateDots();
+  // video control
+  const vid = document.getElementById('vid3');
+  if (vid && vid.src) {
+    if (cur === 2) { vid.currentTime = 0; vid.play().catch(() => {}); }
+    else { vid.pause(); }
+  }
+  // Switch to next slide 5s after typing finishes
+  animateSlide(cur + 1).then(done => {
+    if (done) timer = setTimeout(() => goTo(cur + 1), 5000);
+  });
+}
+// No initial auto-timer — first slide waits for data to load
+
+/* ══ DATA ══ */
+const WEBHOOK = 'https://kokolsk1y.app.n8n.cloud/webhook/tv-demo';
+
+function decodeHtml(str) {
+  const ta = document.createElement('textarea');
+  ta.innerHTML = str; return ta.value;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function splitText(raw) {
+  const text = decodeHtml(raw || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  const parts = text.split(/\n\n+/);
+  const firstLine = (parts[0] || '').split('\n')[0].trim();
+  if (firstLine.length <= 80 && parts.length > 1) {
+    const desc = text.slice(text.indexOf('\n') + 1).trim();
+    return { title: firstLine, desc };
+  }
+  return { title: firstLine, desc: text.slice(firstLine.length).trim() };
+}
+
+function setSlide(idx, post) {
+  const { title, desc } = splitText(post.text);
+  const titleEl = document.getElementById('title' + idx);
+  const textEl  = document.getElementById('text' + idx);
+  titleEl.dataset.full = title || 'ЭлектроЦентр';
+  textEl.dataset.full  = desc;
+  document.getElementById('date' + idx).textContent = formatDate(post.date);
+}
+
+function setPhoto(idx, post) {
+  setSlide(idx, post);
+  if (!post.img) return;
+  const img = document.getElementById('img' + idx);
+  const bg  = document.getElementById('bg' + idx);
+  const nm  = document.getElementById('nm' + idx);
+  img.onload = () => {
+    img.style.display = 'block';
+    nm.style.display = 'none';
+    if (bg) { bg.src = post.img; bg.style.display = 'block'; }
+  };
+  img.src = post.img;
+}
+
+let _firstFetch = true;
+
+async function fetchPosts() {
+  try {
+    const res = await fetch(WEBHOOK, { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const posts  = data.posts || [];
+    const photos = posts.filter(p => p.type === 'photo');
+    const videos = posts.filter(p => p.type === 'video');
+
+    if (photos[0]) setPhoto(1, photos[0]);
+    if (photos[1]) setPhoto(2, photos[1]);
+
+    const v = videos[0];
+    if (v) {
+      setSlide(3, v);
+      if (v.videoUrl) {
+        const vid = document.getElementById('vid3');
+        document.getElementById('nm3').style.display = 'none';
+        vid.src = v.videoUrl;
+        vid.style.display = 'block';
+      } else if (v.videoThumb) {
+        const img3 = document.getElementById('img3');
+        const bg3  = document.getElementById('bg3');
+        img3.onload = () => {
+          img3.style.display = 'block';
+          document.getElementById('nm3').style.display = 'none';
+          if (bg3) { bg3.src = v.videoThumb; bg3.style.display = 'block'; }
+          document.getElementById('play3').style.display = 'flex';
+        };
+        img3.src = v.videoThumb;
+      }
+    }
+
+    if (_firstFetch) {
+      _firstFetch = false;
+      clearTimeout(timer);
+      animateSlide(cur + 1).then(done => {
+        if (done) timer = setTimeout(() => goTo(cur + 1), 5000);
+      });
+    }
+  } catch(e) { console.warn('fetch error:', e); }
+}
+
+fetchPosts();
+setInterval(fetchPosts, 30 * 60 * 1000);
+
+/* ══ AUTO-SCALE ══ */
+(function() {
+  var W = 1920, H = 1080;
+  function scale() {
+    var s = Math.min(window.innerWidth / W, window.innerHeight / H);
+    var wrap = document.getElementById('wrap');
+    wrap.style.transform = 'scale(' + s + ')';
+    wrap.style.left = ((window.innerWidth  - W * s) / 2) + 'px';
+    wrap.style.top  = ((window.innerHeight - H * s) / 2) + 'px';
+  }
+  scale();
+  window.addEventListener('resize', scale);
+})();
+</script>
+</body>
+</html>
